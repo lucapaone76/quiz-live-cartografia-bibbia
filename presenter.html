@@ -3,43 +3,60 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quiz live – Presentatore</title>
+<title>Quiz — Presentatore</title>
 <style>
-  :root { --bg1:#1b1464; --bg2:#4a1d8f; --card:rgba(255,255,255,.1); --ok:#22c55e; --txt:#fff; }
+  :root { --bg1:#1b1464; --bg2:#4a1d8f; --card:rgba(255,255,255,.1); --ok:#22c55e; --gold:#fbbf24; --txt:#fff; }
   * { box-sizing: border-box; }
   body { margin:0; min-height:100vh; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--txt);
          background: linear-gradient(160deg,var(--bg1),var(--bg2)); display:flex; justify-content:center; }
-  main { width:100%; max-width:980px; padding:28px 24px 48px; display:flex; flex-direction:column; gap:22px; }
+  main { width:100%; max-width:1040px; padding:24px 24px 48px; display:flex; flex-direction:column; gap:20px; }
   .top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
   .tag { font-size:14px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
   .link { font-size:14px; opacity:.8; }
   .link code { background:rgba(255,255,255,.15); padding:3px 8px; border-radius:8px; }
-  h1 { font-size:clamp(26px,4.4vw,46px); line-height:1.2; margin:0; }
+  h1 { font-size:clamp(26px,4.2vw,44px); line-height:1.2; margin:0; }
   .opts { display:grid; gap:14px; grid-template-columns:1fr; }
   @media (min-width:760px) { .opts { grid-template-columns:1fr 1fr; } }
   .opt { position:relative; overflow:hidden; display:flex; align-items:center; gap:14px; border:3px solid rgba(255,255,255,.18);
-         background:var(--card); border-radius:20px; padding:20px; font-size:clamp(18px,2.4vw,26px); transition:opacity .4s, border-color .3s, box-shadow .4s; }
+         background:var(--card); border-radius:20px; padding:18px; font-size:clamp(18px,2.3vw,25px); transition:opacity .4s, border-color .3s, box-shadow .4s; }
   .opt .letter { flex:0 0 44px; height:44px; border-radius:50%; background:rgba(255,255,255,.2); display:grid; place-items:center; font-weight:800; z-index:1; }
   .opt .label { flex:1; z-index:1; }
-  .opt .pct { font-weight:800; font-size:1.2em; z-index:1; font-variant-numeric:tabular-nums; }
+  .opt .pct { font-weight:800; font-size:1.2em; z-index:1; font-variant-numeric:tabular-nums; text-align:right; }
+  .opt .pct small { display:block; font-size:.55em; font-weight:600; opacity:.8; }
   .opt .bar { position:absolute; inset:0 auto 0 0; width:0; background:rgba(255,255,255,.24); transition:width 1s cubic-bezier(.2,.8,.2,1); }
   .opt.correct { border-color:var(--ok); box-shadow:0 0 0 6px rgba(34,197,94,.3), 0 0 50px rgba(34,197,94,.6); animation:pop .6s ease; }
   .opt.correct .bar { background:rgba(34,197,94,.5); }
   .opt.dim { opacity:.35; }
   @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.04)} 100%{transform:scale(1)} }
+  .explain { display:flex; gap:20px; align-items:center; background:rgba(255,255,255,.08); border-left:6px solid var(--gold);
+             border-radius:14px; padding:16px 20px; font-size:clamp(17px,1.9vw,22px); line-height:1.4; }
+  .explain img { width:min(42%,380px); border-radius:10px; flex:none; }
   .bottom { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
   .count { font-size:20px; opacity:.9; }
   button.main { background:#fff; color:#2a1470; border:0; border-radius:16px; padding:16px 28px; font-size:20px; font-weight:800; cursor:pointer; }
   button.main:active { transform:scale(.97); }
-  .center { text-align:center; margin-top:14vh; }
-  .center .big { font-size:72px; }
+  button.ghost { background:none; color:#fff; border:2px solid rgba(255,255,255,.5); border-radius:14px; padding:12px 20px; font-size:16px; cursor:pointer; }
+  .center { text-align:center; margin-top:6vh; display:flex; flex-direction:column; gap:16px; align-items:center; }
+  .center .big { font-size:64px; }
+  .qr { background:#fff; padding:14px; border-radius:16px; line-height:0; }
+  .qr svg, .qr img { width:240px; height:240px; }
+  .podium { display:flex; align-items:flex-end; justify-content:center; gap:18px; margin-top:10px; }
+  .step { width:220px; border-radius:18px 18px 0 0; background:var(--card); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:16px 10px; gap:6px; }
+  .step .medal { font-size:48px; }
+  .step .who { font-size:26px; font-weight:800; word-break:break-word; }
+  .step .pts { font-size:18px; opacity:.85; }
+  .step.p1 { height:260px; background:rgba(251,191,36,.25); border:3px solid var(--gold); }
+  .step.p2 { height:210px; }
+  .step.p3 { height:170px; }
   input { font-size:22px; padding:12px 16px; border-radius:12px; border:0; text-align:center; width:220px; }
   .err { color:#fecaca; min-height:22px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
 </style>
 </head>
 <body>
 <main id="app"></main>
 
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -47,19 +64,30 @@ const SUPABASE_URL = 'https://igadvmjzyrylaxpacrew.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_fIO4K5Q3L63lnp4iuwn_hw_qZOc0NAb';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
+const QUIZ = new URLSearchParams(location.search).get('quiz') === '2' ? 2 : 1;
+const OTHER = QUIZ === 1 ? 2 : 1;
+const TITLES = { 1: 'Quiz 1 · Cartografia della Parola', 2: 'Quiz 2 · Come approcciare il testo biblico' };
+document.title = 'Presentatore — ' + TITLES[QUIZ];
 const LETTERS = ['A','B','C','D'];
 const app = document.getElementById('app');
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const voteUrl = location.href.replace(/presenter\.html.*$/, 'vote.html');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const base = location.href.replace(/presenter\.html.*$/, '');
+const voteUrl = `${base}vote.html?quiz=${QUIZ}`;
 
 let pin = sessionStorage.getItem('quiz_pin') || '';
 let questions = [];
-let st = null, shownKey = '', results = [], correct = null, voteCount = 0;
+let st = null, shownKey = '', results = [], key = null, voteCount = 0, board = [], players = 0, timer = null;
+
+function qrSvg(text) {
+  try { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); }
+  catch { return ''; }
+}
 
 if (!pin) askPin(); else start();
 
 function askPin(msg = '') {
-  app.innerHTML = `<div class="center"><div class="big">🎛️</div><h1>Pannello presentatore</h1>
+  clearInterval(timer); timer = null;
+  app.innerHTML = `<div class="center"><div class="big">🎛️</div><h1>Pannello presentatore</h1><p class="tag">${esc(TITLES[QUIZ])}</p>
     <p><input id="pin" type="password" placeholder="PIN" autofocus></p><p class="err">${esc(msg)}</p>
     <button class="main" id="go">Entra</button></div>`;
   const go = () => { pin = document.getElementById('pin').value.trim(); sessionStorage.setItem('quiz_pin', pin); start(); };
@@ -68,19 +96,34 @@ function askPin(msg = '') {
 }
 
 async function start() {
-  const { data } = await sb.from('quiz_questions').select('*').order('position');
+  const { data } = await sb.from('quiz_questions').select('*').eq('quiz', QUIZ).order('position');
   questions = data || [];
-  tick(); setInterval(tick, 1500);
+  shownKey = ''; tick();
+  if (!timer) timer = setInterval(tick, 1500);
 }
 
 async function setState(phase, question) {
-  const { error } = await sb.rpc('quiz_set_state', { p_pin: pin, p_phase: phase, p_question: question });
+  const { error } = await sb.rpc('quiz_set_state', { p_pin: pin, p_quiz: QUIZ, p_phase: phase, p_question: question });
   if (error) { sessionStorage.removeItem('quiz_pin'); return askPin('PIN errato'); }
   tick();
 }
 
+async function resetQuiz() {
+  if (!confirm(`Azzerare tutti i voti del ${TITLES[QUIZ].split(' · ')[0]}? I nomi dei partecipanti restano.`)) return;
+  const { error } = await sb.rpc('quiz_reset', { p_pin: pin, p_quiz: QUIZ });
+  if (error) { sessionStorage.removeItem('quiz_pin'); return askPin('PIN errato'); }
+  shownKey = ''; tick();
+}
+
+async function resetAll() {
+  if (!confirm('Azzerare TUTTO: voti di entrambi i quiz e nomi dei partecipanti?')) return;
+  const { error } = await sb.rpc('quiz_reset_all', { p_pin: pin });
+  if (error) { sessionStorage.removeItem('quiz_pin'); return askPin('PIN errato'); }
+  shownKey = ''; tick();
+}
+
 async function tick() {
-  const { data } = await sb.from('quiz_state').select('*').eq('id', 1).single();
+  const { data } = await sb.from('quiz_state').select('*').eq('id', QUIZ).single();
   if (!data) return;
   st = data;
   const q = questions.find(x => x.id === st.current_question);
@@ -89,23 +132,31 @@ async function tick() {
     const { data: n } = await sb.rpc('quiz_vote_count', { p_question: q.id });
     voteCount = Number(n || 0);
   }
-  const key = `${st.phase}:${st.current_question}:${voteCount}`;
-  if (key === shownKey) return;
+  if (st.phase === 'waiting' || st.phase === 'finished') {
+    const { data: n } = await sb.rpc('quiz_participants', { p_quiz: QUIZ });
+    players = Number(n || 0);
+  }
+  const k = `${st.phase}:${st.current_question}:${voteCount}:${players}`;
+  if (k === shownKey) return;
 
-  if (q && (st.phase === 'results' || st.phase === 'revealed')) {
-    if (!shownKey.startsWith(`${st.phase}:${st.current_question}:`)) {
+  const samePhase = shownKey.startsWith(`${st.phase}:${st.current_question}:`);
+  if (!samePhase) {
+    results = []; key = null; board = [];
+    if (q && (st.phase === 'results' || st.phase === 'revealed')) {
       const { data: rows } = await sb.rpc('quiz_results', { p_question: q.id });
       results = rows || [];
-      correct = null;
-      if (st.phase === 'revealed') {
-        const { data: k } = await sb.from('quiz_keys').select('correct_index').eq('question_id', q.id).maybeSingle();
-        correct = k ? k.correct_index : null;
-      }
+    }
+    if (q && st.phase === 'revealed') {
+      const { data: kk } = await sb.from('quiz_keys').select('correct_index, note, image').eq('question_id', q.id).maybeSingle();
+      key = kk;
+    }
+    if (st.phase === 'finished') {
+      const { data: b } = await sb.rpc('quiz_leaderboard', { p_quiz: QUIZ });
+      board = b || [];
     }
   }
-  const prevPhaseKey = shownKey.split(':').slice(0, 2).join(':');
-  shownKey = key;
-  render(q, prevPhaseKey === `${st.phase}:${st.current_question}`);
+  shownKey = k;
+  render(q);
 }
 
 function nextAction(q) {
@@ -116,37 +167,64 @@ function nextAction(q) {
     case 'results':  return ['✅ Mostra la risposta giusta', () => setState('revealed', q.id)];
     case 'revealed': return idx < questions.length - 1
                       ? ['➡ Prossima domanda', () => setState('voting', questions[idx + 1].id)]
-                      : ['🏁 Concludi il quiz', () => setState('finished', q.id)];
-    default:         return ['↺ Ricomincia (azzera i voti)', async () => { await sb.rpc('quiz_reset', { p_pin: pin }); tick(); }];
+                      : ['🏁 Concludi e mostra la classifica', () => setState('finished', q.id)];
+    default:         return ['↺ Ricomincia questo quiz (azzera i voti)', resetQuiz];
   }
 }
 
-function render(q, samePhase) {
-  if (st.phase === 'waiting' || st.phase === 'finished' || !q) {
-    const [label, fn] = nextAction(q);
-    const title = st.phase === 'finished' ? 'Quiz concluso 🎉' : 'Tutto pronto';
-    app.innerHTML = `<div class="center"><div class="big">${st.phase === 'finished' ? '🏆' : '🎤'}</div><h1>${title}</h1>
-      <p class="link">Link per i partecipanti:<br><code>${esc(voteUrl)}</code></p><button class="main" id="act">${label}</button></div>`;
+function render(q) {
+  const [label, fn] = nextAction(q);
+  if (st.phase === 'waiting' || !q) {
+    app.innerHTML = `<div class="center"><span class="tag">${esc(TITLES[QUIZ])} · ${questions.length} domande</span>
+      <h1>Inquadra il codice e scrivi il tuo nome</h1>
+      <div class="qr">${qrSvg(voteUrl)}</div>
+      <p class="link"><code>${esc(voteUrl)}</code></p>
+      <button class="main" id="act">${label}</button>
+      <div class="row"><button class="ghost" id="rst">Azzera i voti di questo quiz</button>
+      <button class="ghost" id="all">Azzera tutto (anche i nomi)</button>
+      <button class="ghost" id="other">Vai al quiz ${OTHER}</button></div></div>`;
     document.getElementById('act').onclick = fn;
+    document.getElementById('rst').onclick = resetQuiz;
+    document.getElementById('all').onclick = resetAll;
+    document.getElementById('other').onclick = () => { location.href = `${base}presenter.html?quiz=${OTHER}`; };
     return;
   }
+  if (st.phase === 'finished') {
+    const medals = ['🥇','🥈','🥉'];
+    const order = [2, 1, 3].map(p => board.find(r => r.place === p)).filter(Boolean);
+    const pod = order.map(r => `<div class="step p${r.place}"><div class="medal">${medals[r.place - 1]}</div>
+      <div class="who">${esc(r.name)}</div><div class="pts">${r.correct} su ${questions.length}</div></div>`).join('');
+    app.innerHTML = `<div class="center"><span class="tag">${esc(TITLES[QUIZ])}</span><h1>Quiz concluso 🎉</h1>
+      ${pod ? `<div class="podium">${pod}</div>` : '<p>Nessuna risposta giusta registrata.</p>'}
+      <p class="link">Partecipanti: <b>${players}</b>. A parità di risposte giuste vince chi ha risposto più in fretta.</p>
+      <div class="row"><button class="main" id="act">${label}</button>
+      <button class="ghost" id="other">Vai al quiz ${OTHER}</button>
+      <button class="ghost" id="all">Azzera tutto (anche i nomi)</button></div></div>`;
+    document.getElementById('act').onclick = fn;
+    document.getElementById('other').onclick = () => { location.href = `${base}presenter.html?quiz=${OTHER}`; };
+    document.getElementById('all').onclick = resetAll;
+    return;
+  }
+
   const total = results.reduce((a, r) => a + Number(r.n), 0);
   const count = i => Number(results.find(r => r.choice === i)?.n || 0);
   const showPct = st.phase !== 'voting';
+  const correct = key ? key.correct_index : null;
   const opts = q.options.map((text, i) => {
     let cls = 'opt';
-    if (st.phase === 'revealed' && correct !== null) cls += i === correct ? ' correct' : ' dim';
+    if (correct !== null) cls += i === correct ? ' correct' : ' dim';
     const pct = total ? Math.round(count(i) / total * 100) : 0;
     return `<div class="${cls}"><div class="bar" data-w="${showPct ? pct : 0}"></div>
       <span class="letter">${LETTERS[i]}</span><span class="label">${esc(text)}</span>
-      ${showPct ? `<span class="pct">${pct}%</span>` : ''}</div>`;
+      ${showPct ? `<span class="pct">${pct}%<small>${count(i)} ${count(i) === 1 ? 'persona' : 'persone'}</small></span>` : ''}</div>`;
   }).join('');
-  const [label, fn] = nextAction(q);
+  const explain = key && (key.note || key.image)
+    ? `<div class="explain">${key.image ? `<img src="${esc(key.image)}" alt="">` : ''}<div>${esc(key.note)}</div></div>` : '';
   const info = st.phase === 'voting' ? `🗳️ Hanno risposto: <b>${voteCount}</b>`
-             : `Totale risposte: <b>${total}</b>`;
-  app.innerHTML = `<div class="top"><span class="tag">Domanda ${q.position} di ${questions.length}</span>
+             : correct !== null ? `Hanno indovinato <b>${count(correct)}</b> su ${total}` : `Totale risposte: <b>${total}</b>`;
+  app.innerHTML = `<div class="top"><span class="tag">${esc(TITLES[QUIZ])} · Domanda ${q.position} di ${questions.length}</span>
       <span class="link">Partecipa: <code>${esc(voteUrl)}</code></span></div>
-    <h1>${esc(q.text)}</h1><div class="opts">${opts}</div>
+    <h1>${esc(q.text)}</h1><div class="opts">${opts}</div>${explain}
     <div class="bottom"><span class="count">${info}</span><button class="main" id="act">${label}</button></div>`;
   document.getElementById('act').onclick = fn;
   requestAnimationFrame(() => requestAnimationFrame(() => app.querySelectorAll('.bar').forEach(b => { b.style.width = b.dataset.w + '%'; })));

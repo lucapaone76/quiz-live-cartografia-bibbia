@@ -3,16 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quiz live</title>
+<title>Quiz — Cartografia della Parola</title>
 <style>
-  :root { --bg1:#1b1464; --bg2:#4a1d8f; --card:rgba(255,255,255,.1); --ok:#22c55e; --ko:#ef4444; --txt:#fff; }
+  :root { --bg1:#1b1464; --bg2:#4a1d8f; --card:rgba(255,255,255,.1); --ok:#22c55e; --ko:#ef4444; --gold:#fbbf24; --txt:#fff; }
   * { box-sizing: border-box; }
   body { margin:0; min-height:100vh; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--txt);
          background: linear-gradient(160deg,var(--bg1),var(--bg2)); display:flex; justify-content:center; }
-  main { width:100%; max-width:520px; padding:20px 16px 40px; display:flex; flex-direction:column; gap:16px; }
+  main { width:100%; max-width:520px; padding:16px 16px 40px; display:flex; flex-direction:column; gap:16px; }
+  .bar-top { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:14px; opacity:.85; }
+  .bar-top button { background:none; border:0; color:inherit; text-decoration:underline; font-size:14px; cursor:pointer; padding:0; }
   .tag { font-size:13px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
   h1 { font-size:24px; line-height:1.25; margin:0; }
-  .center { text-align:center; margin-top:18vh; }
+  .center { text-align:center; margin-top:12vh; display:flex; flex-direction:column; gap:12px; align-items:center; }
   .center .big { font-size:56px; }
   .opt { position:relative; overflow:hidden; display:flex; align-items:center; gap:12px; width:100%; text-align:left;
          background:var(--card); border:2px solid rgba(255,255,255,.18); color:var(--txt); border-radius:16px;
@@ -29,8 +31,18 @@
   .opt.wrong { border-color:var(--ko); }
   .opt.wrong .bar { background:rgba(239,68,68,.45); }
   .opt.dim { opacity:.45; }
-  .note { text-align:center; opacity:.85; min-height:24px; }
-  .verdict { text-align:center; font-size:22px; font-weight:700; }
+  .note { text-align:center; opacity:.85; min-height:24px; margin:0; }
+  .verdict { text-align:center; font-size:22px; font-weight:700; margin:0; }
+  .explain { background:rgba(255,255,255,.08); border-left:4px solid var(--gold); border-radius:10px; padding:12px 14px; font-size:15px; line-height:1.4; }
+  .explain img { display:block; width:100%; border-radius:8px; margin-top:10px; }
+  .score { text-align:center; font-size:15px; opacity:.85; }
+  .podium { width:100%; display:flex; flex-direction:column; gap:8px; }
+  .podium div { display:flex; justify-content:space-between; background:var(--card); border-radius:12px; padding:12px 16px; font-size:18px; }
+  .podium div.me { outline:2px solid var(--gold); }
+  form { display:flex; flex-direction:column; gap:12px; width:100%; }
+  input { font-size:20px; padding:14px 16px; border-radius:14px; border:0; width:100%; }
+  button.main { background:#fff; color:#2a1470; border:0; border-radius:14px; padding:14px 22px; font-size:18px; font-weight:800; cursor:pointer; }
+  .err { color:#fecaca; min-height:20px; margin:0; }
   .pulse { animation: pulse 1.6s ease-in-out infinite; }
   @keyframes pulse { 50% { opacity:.4; } }
 </style>
@@ -45,21 +57,62 @@ const SUPABASE_URL = 'https://igadvmjzyrylaxpacrew.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_fIO4K5Q3L63lnp4iuwn_hw_qZOc0NAb';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
+const QUIZ = new URLSearchParams(location.search).get('quiz') === '2' ? 2 : 1;
+const TITLES = { 1: 'Quiz 1 · Cartografia della Parola', 2: 'Quiz 2 · Come approcciare il testo biblico' };
+document.title = TITLES[QUIZ];
 const LETTERS = ['A','B','C','D'];
 const app = document.getElementById('app');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-// Identità anonima del dispositivo (nessun account): serve solo a impedire doppi voti
-let sid = localStorage.getItem('quiz_sid');
-if (!sid) { sid = crypto.randomUUID(); localStorage.setItem('quiz_sid', sid); }
-const load = k => { try { return JSON.parse(localStorage.getItem(k) || '{}'); } catch { return {}; } };
-const mine = load('quiz_mine');       // domanda -> scelta
-const score = load('quiz_score');     // domanda -> true/false
+// ---- Identità del dispositivo: un codice casuale salvato nel browser (memoria locale + cookie), niente account.
+// Resta uguale anche se la pagina viene ricaricata o chiusa e riaperta sullo stesso telefono e browser.
+const cookie = k => (document.cookie.split('; ').find(c => c.startsWith(k + '=')) || '').split('=').slice(1).join('=');
+const remember = (k, v) => {
+  try { localStorage.setItem(k, v); } catch {}
+  document.cookie = `${k}=${encodeURIComponent(v)}; max-age=31536000; path=/; SameSite=Lax`;
+};
+const recall = k => { let v = null; try { v = localStorage.getItem(k); } catch {} return v || (cookie(k) ? decodeURIComponent(cookie(k)) : null); };
+
+let sid = recall('quiz_sid');
+if (!sid) sid = crypto.randomUUID();
+remember('quiz_sid', sid);
+let name = recall('quiz_name');
+
+const mineKey = `quiz_mine_${QUIZ}`;
+const loadMine = () => { try { return JSON.parse(localStorage.getItem(mineKey) || '{}'); } catch { return {}; } };
+let mine = loadMine();
+const saveMine = () => { try { localStorage.setItem(mineKey, JSON.stringify(mine)); } catch {} };
 
 const qCache = {};
-let shownKey = '';
-let results = null, correct = null;
+let shownKey = '', results = null, key = null, myScore = null, board = [], timer = null;
 
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+if (!name) askName(); else join(name).then(startLoop);
+
+function askName(msg = '') {
+  clearInterval(timer); timer = null; shownKey = '';
+  app.innerHTML = `<div class="center"><div class="big">👋</div><h1>Come ti chiami?</h1>
+    <p class="note">Il nome serve per la classifica finale. Resta legato a questo telefono.</p>
+    <form id="f"><input id="n" maxlength="40" autocomplete="nickname" placeholder="Il tuo nome" value="${esc(name || '')}" required>
+    <p class="err">${esc(msg)}</p><button class="main">Entra nel quiz</button></form></div>`;
+  document.getElementById('f').onsubmit = async e => {
+    e.preventDefault();
+    const n = document.getElementById('n').value.trim();
+    if (!n) return;
+    const ok = await join(n);
+    if (!ok) return askName('Non riesco a registrare il nome: controlla la connessione e riprova.');
+    startLoop();
+  };
+  document.getElementById('n').focus();
+}
+
+async function join(n) {
+  const { error } = await sb.rpc('quiz_join', { p_session: sid, p_name: n });
+  if (error) return false;
+  name = n; remember('quiz_name', n);
+  return true;
+}
+
+function startLoop() { shownKey = ''; tick(); if (!timer) timer = setInterval(tick, 1500); }
 
 async function getQuestion(id) {
   if (!qCache[id]) {
@@ -69,33 +122,53 @@ async function getQuestion(id) {
   return qCache[id];
 }
 
-async function tick() {
-  const { data: st, error } = await sb.from('quiz_state').select('*').eq('id', 1).single();
-  if (error || !st) { return; }
-  const key = `${st.phase}:${st.current_question}:${mine[st.current_question] ?? '-'}`;
-  if (key === shownKey) return;
+const header = () => `<div class="bar-top"><span>${esc(TITLES[QUIZ])}</span><span>👤 ${esc(name)} · <button id="chg">cambia</button></span></div>`;
+function show(html) {
+  app.innerHTML = header() + html;
+  document.getElementById('chg').onclick = () => askName();
+}
 
-  if (st.phase === 'waiting') { shownKey = key; return show('<div class="center"><div class="big">⏳</div><h1>Il quiz sta per iniziare</h1><p class="note">Resta su questa pagina.</p></div>'); }
+async function tick() {
+  const { data: st, error } = await sb.from('quiz_state').select('*').eq('id', QUIZ).single();
+  if (error || !st) return;
+  const k = `${st.phase}:${st.current_question}:${mine[st.current_question] ?? '-'}`;
+  if (k === shownKey) return;
+
+  if (st.phase === 'waiting') {
+    shownKey = k;
+    if (Object.keys(mine).length) { mine = {}; saveMine(); }   // quiz azzerato: si riparte da capo
+    return show(`<div class="center"><div class="big">⏳</div><h1>Il quiz sta per iniziare</h1><p class="note">Resta su questa pagina.</p></div>`);
+  }
   if (st.phase === 'finished') {
-    shownKey = key;
-    const tot = Object.keys(score).length, ok = Object.values(score).filter(Boolean).length;
-    return show(`<div class="center"><div class="big">🎉</div><h1>Grazie per aver partecipato!</h1>${tot ? `<p class="note">Risposte giuste: <b>${ok}</b> su ${tot}</p>` : ''}</div>`);
+    shownKey = k;
+    const [{ data: s }, { data: b }] = await Promise.all([
+      sb.rpc('quiz_my_score', { p_quiz: QUIZ, p_session: sid }),
+      sb.rpc('quiz_leaderboard', { p_quiz: QUIZ })
+    ]);
+    const sc = (s && s[0]) || { correct: 0, revealed: 0 };
+    board = b || [];
+    const medals = ['🥇','🥈','🥉'];
+    const pod = board.map(r => `<div class="${r.name === name ? 'me' : ''}"><span>${medals[r.place - 1]} ${esc(r.name)}</span><b>${r.correct}</b></div>`).join('');
+    return show(`<div class="center"><div class="big">🎉</div><h1>Grazie per aver partecipato!</h1>
+      <p class="verdict">Hai indovinato ${sc.correct} su ${sc.revealed}</p>
+      ${pod ? `<p class="note">I primi tre</p><div class="podium">${pod}</div>` : ''}</div>`);
   }
 
   const q = await getQuestion(st.current_question);
   const my = mine[q.id];
-
+  results = null; key = null; myScore = null;
   if (st.phase === 'results' || st.phase === 'revealed') {
     const { data: rows } = await sb.rpc('quiz_results', { p_question: q.id });
     results = rows || [];
-    correct = null;
-    if (st.phase === 'revealed') {
-      const { data: k } = await sb.from('quiz_keys').select('correct_index').eq('question_id', q.id).maybeSingle();
-      correct = k ? k.correct_index : null;
-      if (my !== undefined && correct !== null) { score[q.id] = (my === correct); localStorage.setItem('quiz_score', JSON.stringify(score)); }
-    }
   }
-  shownKey = key;
+  if (st.phase === 'revealed') {
+    const [{ data: kk }, { data: s }] = await Promise.all([
+      sb.from('quiz_keys').select('correct_index, note, image').eq('question_id', q.id).maybeSingle(),
+      sb.rpc('quiz_my_score', { p_quiz: QUIZ, p_session: sid })
+    ]);
+    key = kk; myScore = s && s[0];
+  }
+  shownKey = k;
   renderQuestion(st, q, my);
   if (st.phase !== 'voting') requestAnimationFrame(() => requestAnimationFrame(animateBars));
 }
@@ -104,14 +177,11 @@ function renderQuestion(st, q, my) {
   const total = (results || []).reduce((a, r) => a + Number(r.n), 0);
   const count = i => Number((results || []).find(r => r.choice === i)?.n || 0);
   const showPct = st.phase !== 'voting';
+  const correct = key ? key.correct_index : null;
   const opts = q.options.map((text, i) => {
     let cls = 'opt';
     if (my === i) cls += ' mine';
-    if (st.phase === 'revealed' && correct !== null) {
-      if (i === correct) cls += ' correct';
-      else if (my === i) cls += ' wrong';
-      else cls += ' dim';
-    }
+    if (correct !== null) cls += i === correct ? ' correct' : (my === i ? ' wrong' : ' dim');
     const pct = total ? Math.round(count(i) / total * 100) : 0;
     const disabled = st.phase !== 'voting' || my !== undefined ? 'disabled' : '';
     return `<button class="${cls}" data-i="${i}" ${disabled}>
@@ -128,26 +198,30 @@ function renderQuestion(st, q, my) {
     if (my === undefined) foot = '<p class="note">Non hai risposto a questa domanda</p>';
     else if (correct === my) foot = '<p class="verdict">🎯 Giusto!</p>';
     else foot = '<p class="verdict">❌ Questa volta no</p>';
+    if (key && (key.note || key.image)) foot += `<div class="explain">${esc(key.note)}${key.image ? `<img src="${esc(key.image)}" alt="">` : ''}</div>`;
+    if (myScore) foot += `<p class="score">Finora hai indovinato ${myScore.correct} su ${myScore.revealed}</p>`;
   }
   show(`<div class="tag">Domanda ${q.position}</div><h1>${esc(q.text)}</h1><div style="display:flex;flex-direction:column;gap:10px">${opts}</div>${foot}`);
   app.querySelectorAll('button.opt:not([disabled])').forEach(b => b.addEventListener('click', () => vote(q.id, Number(b.dataset.i))));
 }
 
 function animateBars() { app.querySelectorAll('.bar').forEach(b => { b.style.width = b.dataset.w + '%'; }); }
-function show(html) { app.innerHTML = html; }
 
 async function vote(qid, choice) {
-  mine[qid] = choice; localStorage.setItem('quiz_mine', JSON.stringify(mine));
-  const { error } = await sb.from('quiz_votes').insert({ question_id: qid, session_id: sid, choice });
-  if (error && error.code !== '23505') {          // 23505 = hai già votato
-    delete mine[qid]; localStorage.setItem('quiz_mine', JSON.stringify(mine));
-    alert('Voto non registrato: le votazioni sono chiuse.');
+  mine[qid] = choice; saveMine();
+  let { error } = await sb.from('quiz_votes').insert({ question_id: qid, session_id: sid, choice });
+  if (error && error.code !== '23505') {           // forse il nome non è registrato (quiz azzerato): riprova una volta
+    await join(name);
+    ({ error } = await sb.from('quiz_votes').insert({ question_id: qid, session_id: sid, choice }));
+  }
+  if (error && error.code !== '23505') {            // 23505 = hai già votato
+    delete mine[qid]; saveMine();
+    shownKey = ''; await tick();
+    const n = app.querySelector('.note'); if (n) n.textContent = 'Voto non registrato: le votazioni per questa domanda sono chiuse.';
+    return;
   }
   shownKey = ''; tick();
 }
-
-tick();
-setInterval(tick, 1500);
 </script>
 </body>
 </html>
