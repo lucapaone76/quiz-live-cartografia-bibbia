@@ -1,15 +1,18 @@
-# Quiz live — Cartografia della Parola
+# Quiz e slide dal vivo — Cartografia della Parola
 
-Due quiz dal vivo per la catechesi su come leggere la Bibbia, senza account per i partecipanti.
+Due quiz dal vivo e le slide delle due parti della catechesi su come leggere la Bibbia, da seguire sul telefono. Nessun account per i partecipanti.
 
 | Pagina | Per chi | Indirizzo |
 |---|---|---|
+| Slide della parte 1 / 2, in diretta | partecipanti | `slides.html?deck=1`, `slides.html?deck=2` |
+| Regia delle slide, parte 1 / 2 | chi presenta (serve il PIN) | `regia.html?deck=1`, `regia.html?deck=2` |
+| Schermo per il proiettore, parte 1 / 2 | chi presenta | `slides.html?deck=1&schermo=1`, `slides.html?deck=2&schermo=1` |
 | Quiz 1 (parte 1, 12 domande) | partecipanti | `vote.html?quiz=1` |
 | Quiz 2 (parte 2, 7 domande) | partecipanti | `vote.html?quiz=2` |
 | Pannello del quiz 1 / 2 | chi presenta (serve il PIN) | `presenter.html?quiz=1`, `presenter.html?quiz=2` |
 | Risposte di tutti, quiz 1 / 2 | chi presenta (serve il PIN) | `admin.html?quiz=1`, `admin.html?quiz=2` |
 | Numeri dei partecipanti | chi presenta (serve il PIN) | `numeri.html` |
-| Scelta del quiz | tutti | `index.html` |
+| Pagina iniziale (slide e quiz) | tutti | `index.html` |
 
 ## Come funziona
 
@@ -23,7 +26,27 @@ Due quiz dal vivo per la catechesi su come leggere la Bibbia, senza account per 
 - **Numeri dei partecipanti** (`numeri.html`, con PIN, si apre dal pannello con «🔢 Numeri dei partecipanti»): elenco numero e nome, con ricerca, stampa e download CSV. Si aggiorna da sola ogni 5 secondi.
 - **Risposte di tutti** (`admin.html`, con PIN, si apre dal pannello con «📋 Risposte di tutti»): una riga per persona con la risposta data a ogni domanda (verde giusta, rosso sbagliata, tratteggiata se la soluzione non è ancora stata mostrata), il totale delle giuste e i secondi per lo spareggio; in fondo quanti hanno indovinato ogni domanda. Si aggiorna da sola ogni 5 secondi e si scarica in CSV per Excel.
 
+## Slide dal vivo
+
+- **Sincronia**: chi presenta va avanti e indietro dalla regia; i telefoni e lo schermo del proiettore restano sempre sulla stessa pagina e sullo stesso passo di animazione. Il cambio arriva subito (Supabase Realtime); se Realtime non risponde, i telefoni rileggono lo stato ogni 2 secondi (ogni 5 con Realtime attivo). Un telefono che si riaccende si rimette in pari da solo.
+- **Passi di animazione**: nelle slide a schede, nell'iceberg, nei gradini, nella bussola e nelle tabelle gli elementi compaiono uno alla volta, a ogni «Avanti». In regia quelli non ancora mostrati si vedono in trasparenza.
+- **Identità**: la stessa del quiz. Chi segue le slide scrive il nome una volta e riceve il suo numero fisso; nei quiz non deve riscriverlo.
+- **Sul telefono**: in verticale la slide diventa una pagina che scorre, con il testo grande («🔤 Testo grande»); con «🖼️ Slide intera» si vede la slide com'è proiettata. Lo schermo resta acceso. I link nelle slide sono cliccabili. Sull'ultima slide di ogni parte compare il pulsante «Entra nel quiz».
+- **Regia** (`regia.html`, stesso PIN del quiz): slide attuale, anteprima del prossimo clic, note per chi parla, pulsanti grandi Avanti/Indietro, salto a una slide, numero di telefoni collegati, QR code e link per i partecipanti, link allo schermo per il proiettore e, sull'ultima slide, al pannello del quiz. Funziona anche con la tastiera e con i telecomandi per presentazioni (→ ↓ Pagina giù Spazio = avanti; ← ↑ Pagina su = indietro). Si può aprire su più dispositivi insieme (per esempio portatile e telefono come telecomando): restano allineati.
+- **Proiettore** (`slides.html?deck=N&schermo=1`): solo la slide, senza nome; doppio clic per lo schermo intero.
+
+### Cambiare il testo delle slide
+
+Il testo sta in `slides/src/parte-1.md` e `parte-2.md` (estratti del markdown delle slide del Project «Bibbia - come leggerla»: testo e note per chi parla). L'aspetto è `slides/src/slides.css`, identico a quello del PDF; le regole per il telefono sono in `slides/live.css`.
+
+```
+pip install markdown beautifulsoup4 qrcode
+python3 slides/make_slides.py      # rigenera slides/deck-*.json, deck.css e i QR code
+```
+
+Per togliere i passi di animazione da una slide: `<!-- layout: cards; steps: no -->`.
+
 ## Dati (Supabase)
 
-Tabelle `quiz_questions` (con `quiz` = 1 o 2), `quiz_keys` (risposta giusta, nota, immagine facoltativa: leggibili solo a risposta rivelata), `quiz_votes`, `quiz_players` (nome e numero fisso), `quiz_state` (una riga per quiz), `quiz_admin` (PIN).
+Tabelle `quiz_questions` (con `quiz` = 1 o 2), `quiz_keys` (risposta giusta, nota, immagine facoltativa: leggibili solo a risposta rivelata), `quiz_votes`, `quiz_players` (nome e numero fisso), `quiz_state` (una riga per quiz), `quiz_admin` (PIN), `slide_state` (pagina e passo attuali di ogni presentazione, si cambia con `slide_set` e il PIN; creata da `slides/slide-state.sql`).
 Le domande si caricano con `quiz-seed.sql`, generato da `quiz-domande.md` (Project «Bibbia - come leggerla», cartella `cartografia-della-parola/quiz/`).

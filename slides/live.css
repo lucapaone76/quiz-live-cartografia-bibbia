@@ -1,0 +1,113 @@
+/* Slide dal vivo — aspetto delle pagine (slides.html e regia.html).
+   L'aspetto delle slide sta in deck.css (generato da src/slides.css): qui solo cornice, telefono e animazioni. */
+:root { --bg1:#1b1464; --bg2:#4a1d8f; --card:rgba(255,255,255,.1); --ok:#22c55e; --gold:#fbbf24; --txt:#fff; }
+* { box-sizing:border-box; }
+html, body { margin:0; }
+html { background:var(--bg2); }
+body { min-height:100vh; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--txt);
+       background:linear-gradient(160deg,var(--bg1),var(--bg2)); }
+button { font:inherit; }
+.tag { font-size:13px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+.center { text-align:center; margin:12vh auto 0; max-width:520px; padding:0 16px; display:flex; flex-direction:column; gap:12px; align-items:center; }
+.center .big { font-size:56px; }
+.center h1 { font-size:24px; line-height:1.25; margin:0; }
+.note { opacity:.85; margin:0; }
+.err { color:#fecaca; min-height:20px; margin:0; }
+form { display:flex; flex-direction:column; gap:12px; width:100%; }
+input { font-size:20px; padding:14px 16px; border-radius:14px; border:0; width:100%; }
+button.main, a.main { background:#fff; color:#2a1470; border:0; border-radius:14px; padding:14px 22px; font-size:18px; font-weight:800; cursor:pointer; text-decoration:none; display:inline-block; text-align:center; }
+button.main:active, a.main:active { transform:scale(.97); }
+.pulse { animation:pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity:.4; } }
+.live { display:inline-flex; align-items:center; gap:6px; font-size:13px; opacity:.9; }
+.live::before { content:""; width:9px; height:9px; border-radius:50%; background:#9ca3af; }
+.live.on::before { background:var(--ok); box-shadow:0 0 0 3px rgba(34,197,94,.3); }
+.live.off::before { background:#ef4444; }
+
+/* ---- la slide: cornice in scala (16:9) ---- */
+.frame { position:relative; overflow:hidden; margin:0 auto; border-radius:6px; box-shadow:0 10px 40px rgba(0,0,0,.35); background:#f6efdc; }
+.frame > .deck { position:absolute; left:0; top:0; width:1376px; height:768px; transform-origin:0 0; }
+.deck a { cursor:pointer; }
+.deck .slide { margin:0; }
+
+/* ---- passi di animazione ---- */
+.deck .frag { transition:opacity .45s ease, transform .45s ease; }
+.deck .frag:not(.on) { opacity:0; transform:translateY(14px); }
+.deck.ghost .frag:not(.on) { opacity:.2; transform:none; }      /* regia: si vede in trasparenza che cosa arriva */
+.deck .slide.enter { animation:enter .4s ease; }
+@keyframes enter { from { opacity:0; } to { opacity:1; } }
+
+/* ==========================================================================
+   Modalità «testo grande» per il telefono: la slide diventa una pagina che scorre
+   ========================================================================== */
+.deck.reflow { position:static; width:auto; height:auto; transform:none; }
+.deck.reflow .slide { width:auto; height:auto; min-height:calc(100vh - 120px); overflow:visible; padding:30px 22px 54px; border-radius:6px; }
+.deck.reflow .slide::before { inset:6px; }
+.deck.reflow .slide::after { inset:10px; }
+.deck.reflow .slide-title { font-size:26px; margin-bottom:18px; }
+.deck.reflow .slide-title::after { width:110px; margin-top:10px; }
+.deck.reflow .body { font-size:17px !important; line-height:1.42; flex:none; }
+.deck.reflow footer { left:22px; right:22px; bottom:18px; font-size:13px; }
+.deck.reflow blockquote { padding:12px 16px; border-left-width:5px; }
+
+.deck.reflow .layout-title .body, .deck.reflow .layout-closing .body { justify-content:flex-start; }
+.deck.reflow .layout-title figure.art { width:150px; }
+.deck.reflow .layout-title h1 { font-size:38px; }
+.deck.reflow .layout-title h2 { font-size:22px; margin-bottom:18px; }
+.deck.reflow .layout-title blockquote { font-size:17px; padding:12px 16px; }
+.deck.reflow .layout-title .body > p { font-size:15px; }
+
+.deck.reflow .layout-cards .body { grid-template-columns:1fr; gap:16px; }
+.deck.reflow .layout-cards .body > p { padding:16px 18px; }
+.deck.reflow .layout-cards .body > blockquote { padding:14px 18px; font-size:1em; }
+
+.deck.reflow .layout-split .body { grid-template-columns:1fr; gap:18px; }
+.deck.reflow .layout-split .side { padding:18px; font-size:1em; }
+
+.deck.reflow .layout-pillars table { border-spacing:8px 0; width:calc(100% + 16px); margin:0 -8px; }
+.deck.reflow .layout-pillars th { font-size:1.1em; padding:12px 8px; border-radius:40px 40px 0 0; }
+.deck.reflow .layout-pillars td { padding:10px 10px 12px; font-size:.9em; }
+.deck.reflow .layout-pillars .body > p:first-child { padding:8px 16px; font-size:1.05em; }
+.deck.reflow .layout-pillars .body > p:nth-of-type(2) { padding:12px 16px; }
+
+.deck.reflow .layout-depth .body > p { padding:12px 16px; }
+
+.deck.reflow .layout-steps .body > p:first-child { font-size:1.2em; margin-bottom:26px; }
+.deck.reflow .layout-steps ol { grid-template-columns:1fr; gap:30px; }
+.deck.reflow .layout-steps ol > li { margin-top:0 !important; padding:34px 18px 18px; }
+
+.deck.reflow .layout-compass .wheel { display:flex; flex-direction:column; gap:12px; }
+.deck.reflow .layout-compass .wheel-centre { order:-1; }
+.deck.reflow .layout-compass .wheel-centre svg { width:120px; }
+.deck.reflow .layout-compass .dir-card { padding:12px 14px; gap:12px; }
+.deck.reflow .layout-compass .dir { width:42px; height:42px; font-size:24px; }
+
+.deck.reflow .layout-table table { font-size:.92em; }
+.deck.reflow .layout-table th, .deck.reflow .layout-table td { padding:9px 10px; }
+/* tabelle con 3 o più colonne: ogni riga diventa una scheda, ogni cella con il titolo della sua colonna */
+.deck.reflow .layout-table:not(.cols-2) table { border:0; background:none; }
+.deck.reflow .layout-table:not(.cols-2) thead { display:none; }
+.deck.reflow .layout-table:not(.cols-2) :is(tbody, tr, td) { display:block; width:auto; }
+.deck.reflow .layout-table:not(.cols-2) tr { margin-bottom:14px; background:rgba(255,250,240,.92); border:1.5px solid var(--navy); box-shadow:4px 4px 0 rgba(20,40,75,.13); }
+.deck.reflow .layout-table:not(.cols-2) td { border:0; border-top:1px solid var(--gold-soft); }
+.deck.reflow .layout-table:not(.cols-2) td:first-child { width:auto; background:var(--navy); color:var(--gold-soft); font-size:1.08em; border-top:0; }
+.deck.reflow .layout-table:not(.cols-2) td[data-label]::before { content:attr(data-label); display:block; font-family:var(--serif); font-weight:700; color:var(--navy-2); font-size:.95em; margin-bottom:2px; }
+
+.deck.reflow :is(.layout-sources,.layout-urls) .body > p { font-size:1.15em; }
+.deck.reflow :is(.layout-sources,.layout-urls) table { font-size:.82em; }
+.deck.reflow :is(.layout-sources,.layout-urls) th, .deck.reflow :is(.layout-sources,.layout-urls) td { padding:8px; }
+.deck.reflow :is(.layout-sources,.layout-urls) td:last-child { white-space:normal; word-break:break-word; }
+.deck.reflow .layout-urls td:last-child { word-break:break-all; }
+
+.deck.reflow .layout-closing figure.art { width:80px; }
+.deck.reflow .layout-closing h1 { font-size:28px; margin-bottom:18px; }
+.deck.reflow .layout-closing blockquote { padding:14px 16px; }
+.deck.reflow .layout-closing .body > p { font-size:17px; }
+.deck.reflow .layout-closing .body > p:last-child { font-size:21px; }
+
+.deck.reflow .layout-quiz .body { grid-template-columns:1fr; gap:20px; padding:0; }
+.deck.reflow .layout-quiz figure.art { width:180px; margin:0 auto; padding:10px; }
+.deck.reflow .layout-quiz h1 { font-size:30px; }
+.deck.reflow .layout-quiz h2 { font-size:20px; }
+.deck.reflow .layout-quiz .side p { font-size:17px; }
+.deck.reflow .layout-quiz .side p:last-child { font-size:13px; }

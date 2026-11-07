@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b1464">
+<title>Slide dal vivo — Cartografia della Parola</title>
+<link rel="stylesheet" href="slides/deck.css">
+<link rel="stylesheet" href="slides/live.css">
+<style>
+  main { width:100%; max-width:1400px; margin:0 auto; padding:10px 10px 30px; display:flex; flex-direction:column; gap:10px; }
+  .bar-top { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:14px; opacity:.9; flex-wrap:wrap; }
+  .bar-top .num { background:var(--gold); color:#2a1470; border-radius:999px; padding:2px 9px; font-size:13px; margin-right:4px; font-weight:800; }
+  .bar-top button.link { background:none; border:0; color:inherit; text-decoration:underline; font-size:14px; cursor:pointer; padding:0; }
+  .tools { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:13px; }
+  .tools button { background:none; color:#fff; border:1.5px solid rgba(255,255,255,.4); border-radius:999px; padding:5px 12px; font-size:13px; cursor:pointer; }
+  #stage { width:100%; }
+  #stage.fixed { height:calc(100vh - 110px); display:flex; align-items:center; justify-content:center; }
+  .cta { display:flex; justify-content:center; padding:4px 0 10px; }
+  .cta a.main { font-size:20px; padding:16px 26px; box-shadow:0 8px 30px rgba(0,0,0,.35); }
+  .mynum { font-size:20px; margin:0; } .mynum b { background:var(--gold); color:#2a1470; border-radius:12px; padding:2px 12px; font-size:26px; }
+  /* proiettore: solo la slide, a tutto schermo */
+  body.screen { background:#000; overflow:hidden; }
+  body.screen main { max-width:none; padding:0; height:100vh; }
+  body.screen #stage.fixed { height:100vh; }
+  body.screen .frame { border-radius:0; box-shadow:none; }
+  .hint { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.6); padding:8px 14px; border-radius:10px; font-size:14px; transition:opacity 1s; }
+</style>
+</head>
+<body>
+<main id="app"><div class="center pulse">Connessione…</div></main>
+
+<script type="module">
+import { sb, TITLES, esc, deckFromUrl, loadDeck, numberPages, showPage, fitFrame, follow, presence } from './slides/live.js';
+
+const DECK = deckFromUrl();
+const SCREEN = new URLSearchParams(location.search).has('schermo');   // proiettore: niente nome, solo la slide
+document.title = 'Slide — ' + TITLES[DECK];
+const app = document.getElementById('app');
+
+// ---- identità: la stessa del quiz (codice del telefono, nome e numero fisso) ----
+const cookie = k => (document.cookie.split('; ').find(c => c.startsWith(k + '=')) || '').split('=').slice(1).join('=');
+const remember = (k, v) => { try { localStorage.setItem(k, v); } catch {} document.cookie = `${k}=${encodeURIComponent(v)}; max-age=31536000; path=/; SameSite=Lax`; };
+const recall = k => { let v = null; try { v = localStorage.getItem(k); } catch {} return v || (cookie(k) ? decodeURIComponent(cookie(k)) : null); };
+const newId = () => (crypto.randomUUID ? crypto.randomUUID()
+  : '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)));
+let sid = recall('quiz_sid');
+if (!/^[0-9a-f-]{36}$/i.test(sid || '')) sid = newId();
+remember('quiz_sid', sid);
+let name = recall('quiz_name');
+let myNum = null;
+
+let deck = null, state = null, linkOk = null, started = false;
+let mode = (() => { try { return localStorage.getItem('slide_mode'); } catch { return null; } })();   // 'reflow' | 'fixed' | null = automatico
+
+if (SCREEN) { document.body.classList.add('screen'); start(); }
+else if (!name) askName(); else join(name).then(start);
+
+function askName(msg = '') {
+  app.innerHTML = `<div class="center"><div class="big">👋</div><h1>Come ti chiami?</h1>
+    <p class="note">Segui le slide sul telefono mentre parla chi presenta. Il nome resta legato a questo telefono ed è lo stesso dei quiz.</p>
+    <form id="f"><input id="n" maxlength="40" autocomplete="nickname" placeholder="Il tuo nome" value="${esc(name || '')}" required>
+    <p class="err">${esc(msg)}</p><button class="main">Segui le slide</button></form></div>`;
+  document.getElementById('f').onsubmit = async e => {
+    e.preventDefault();
+    const n = document.getElementById('n').value.trim();
+    if (!n) return;
+    if (!await join(n)) return askName('Non riesco a registrare il nome: controlla la connessione e riprova.');
+    started ? layout() : start();
+  };
+  document.getElementById('n').focus();
+}
+
+async function join(n) {
+  const { error } = await sb.rpc('quiz_join', { p_session: sid, p_name: n });
+  if (error) return false;
+  name = n; remember('quiz_name', n);
+  const { data } = await sb.rpc('quiz_my_number', { p_session: sid });
+  myNum = data ?? null;
+  return true;
+}
+
+async function start() {
+  started = true;
+  try { deck = numberPages(await loadDeck(DECK)); }
+  catch { app.innerHTML = '<div class="center"><h1>Non riesco a caricare le slide</h1><p class="note">Controlla la connessione e ricarica la pagina.</p></div>'; return; }
+  layout();
+  follow(DECK, row => { state = row; render(); }, ok => { linkOk = ok; dot(); });
+  if (!SCREEN) presence(DECK, sid, { name, n: myNum }, null);
+  window.addEventListener('resize', () => { if (useReflow() !== app.querySelector('.deck')?.classList.contains('reflow')) layout(); else fit(); });
+  keepAwake();
+}
+
+// Testo grande (pagina che scorre) quando la slide intera verrebbe troppo piccola per leggerla.
+function useReflow() {
+  if (SCREEN) return false;
+  if (mode) return mode === 'reflow';
+  return Math.min(innerWidth / 1376, (innerHeight - 110) / 768) < 0.55;
+}
+
+function layout() {
+  const reflow = useReflow();
+  app.innerHTML = (SCREEN ? '' : `<div class="bar-top"><span>${esc(TITLES[DECK])}</span>
+      <span>${myNum ? `<b class="num">n. ${myNum}</b> ` : ''}👤 ${esc(name)} · <button class="link" id="chg">cambia</button></span></div>
+    <div class="tools"><span class="live" id="dot">collegamento…</span><span id="pos"></span>
+      <button id="mode">${reflow ? '🖼️ Slide intera' : '🔤 Testo grande'}</button></div>`) +
+    `<div id="stage" class="${reflow ? 'flow' : 'fixed'}">${reflow ? '<div class="deck reflow"></div>' : '<div class="frame"><div class="deck"></div></div>'}</div>
+     <div class="cta" id="cta"></div>` + (SCREEN ? '<div class="hint" id="hint">Doppio clic: schermo intero</div>' : '');
+  if (!SCREEN) {
+    document.getElementById('chg').onclick = () => askName();
+    document.getElementById('mode').onclick = () => { mode = reflow ? 'fixed' : 'reflow'; try { localStorage.setItem('slide_mode', mode); } catch {} layout(); };
+  } else {
+    document.body.ondblclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
+    setTimeout(() => { const h = document.getElementById('hint'); if (h) h.style.opacity = 0; }, 4000);
+  }
+  dot(); render(true); fit();
+}
+
+function fit() {
+  const fr = app.querySelector('.frame');
+  if (fr) fitFrame(fr, document.getElementById('stage'));
+}
+
+function dot() {
+  const d = document.getElementById('dot'); if (!d) return;
+  d.className = 'live' + (linkOk === true ? ' on' : linkOk === false ? ' off' : '');
+  d.textContent = linkOk === false ? 'riconnessione…' : linkOk ? 'in diretta' : 'collegamento…';
+}
+
+function render(force = false) {
+  const host = app.querySelector('.deck');
+  if (!host || !deck) return;
+  if (!state) { host.innerHTML = ''; return; }
+  const i = Math.max(0, Math.min(state.slide, deck.pages.length - 1));
+  const page = deck.pages[i];
+  if (force) host.dataset.page = '';
+  showPage(host, page, state.step, { scrollToNew: host.classList.contains('reflow') });
+  const pos = document.getElementById('pos');
+  if (pos) pos.textContent = `${page.n} / ${deck.pages[deck.pages.length - 1].n}`;
+  const cta = document.getElementById('cta');
+  if (cta) cta.innerHTML = page.quiz && !SCREEN ? `<a class="main" href="vote.html?quiz=${page.quiz}">▶ Entra nel quiz ${page.quiz}</a>` : '';
+  fit();
+}
+
+// Lo schermo del telefono resta acceso mentre si seguono le slide (dove il browser lo permette).
+async function keepAwake() {
+  if (!('wakeLock' in navigator) || SCREEN) return;
+  const ask = async () => { try { await navigator.wakeLock.request('screen'); } catch {} };
+  ask();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) ask(); });
+  document.addEventListener('click', ask, { once: true });
+}
+</script>
+</body>
+</html>
