@@ -138,6 +138,7 @@ function render({ list, keys }, st) {
       <div class="btns">
         <a href="${esc(url('admin.html', 1))}" class="${QUIZ === 1 ? 'on' : ''}">Quiz 1</a>
         <a href="${esc(url('admin.html', 2))}" class="${QUIZ === 2 ? 'on' : ''}">Quiz 2</a>
+        <a href="${esc(new URL('numeri.html', location.href).href)}">🔢 Numeri</a>
         <button id="csv">⬇ Scarica (Excel)</button>
         <button id="ref">↻ Aggiorna</button>
       </div>

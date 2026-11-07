@@ -87,6 +87,7 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;
 const voteUrl = new URL(`vote.html?quiz=${QUIZ}`, location.href).href;
 const otherUrl = new URL(`presenter.html?quiz=${OTHER}`, location.href).href;
 const adminUrl = new URL(`admin.html?quiz=${QUIZ}`, location.href).href;
+const numbersUrl = new URL('numeri.html', location.href).href;
 
 let pin = sessionStorage.getItem('quiz_pin') || '';
 let questions = [];
@@ -162,7 +163,7 @@ async function stopQuiz() {
 }
 
 async function resetAll() {
-  if (!await ask('Azzerare tutto?', 'Si cancellano le risposte di entrambi i quiz e i nomi di tutti i partecipanti: dovranno riscriverli. Non si può annullare.', 'Sì, azzera tutto')) return;
+  if (!await ask('Azzerare tutto?', 'Si cancellano le risposte di entrambi i quiz, i nomi e i numeri di tutti i partecipanti: i numeri ripartono da 1. Non si può annullare.', 'Sì, azzera tutto')) return;
   admin('quiz_reset_all', {});
 }
 
@@ -230,7 +231,8 @@ function nextAction(q) {
 }
 
 const tools = (extra = '') => `<div class="tools">${extra}<button id="t-rst">↺ Azzera questo quiz</button>
-  <a href="${esc(adminUrl)}" target="_blank" rel="opener">📋 Risposte di tutti</a></div>`;
+  <a href="${esc(adminUrl)}" target="_blank" rel="opener">📋 Risposte di tutti</a>
+  <a href="${esc(numbersUrl)}" target="_blank" rel="opener">🔢 Numeri dei partecipanti</a></div>`;
 function wireTools() {
   const s = document.getElementById('t-stop'); if (s) s.onclick = stopQuiz;
   document.getElementById('t-rst').onclick = resetQuiz;
@@ -247,7 +249,8 @@ function render(q) {
       <div class="row"><button class="ghost" id="rst">Azzera i voti di questo quiz</button>
       <button class="ghost" id="all">Azzera tutto (anche i nomi)</button>
       <button class="ghost" id="other">Vai al quiz ${OTHER}</button>
-      <a class="ghost" style="text-decoration:none;display:inline-block" href="${esc(adminUrl)}" target="_blank" rel="opener">📋 Risposte di tutti</a></div></div>`;
+      <a class="ghost" style="text-decoration:none;display:inline-block" href="${esc(adminUrl)}" target="_blank" rel="opener">📋 Risposte di tutti</a>
+      <a class="ghost" style="text-decoration:none;display:inline-block" href="${esc(numbersUrl)}" target="_blank" rel="opener">🔢 Numeri dei partecipanti</a></div></div>`;
     document.getElementById('act').onclick = fn;
     document.getElementById('rst').onclick = resetQuiz;
     document.getElementById('all').onclick = resetAll;
@@ -267,7 +270,8 @@ function render(q) {
       <div class="row"><button class="main" id="act">${label}</button>
       <button class="ghost" id="other">Vai al quiz ${OTHER}</button>
       <button class="ghost" id="all">Azzera tutto (anche i nomi)</button>
-      <a class="ghost" style="text-decoration:none;display:inline-block" href="${esc(adminUrl)}" target="_blank" rel="opener">📋 Risposte di tutti</a></div></div>`;
+      <a class="ghost" style="text-decoration:none;display:inline-block" href="${esc(adminUrl)}" target="_blank" rel="opener">📋 Risposte di tutti</a>
+      <a class="ghost" style="text-decoration:none;display:inline-block" href="${esc(numbersUrl)}" target="_blank" rel="opener">🔢 Numeri dei partecipanti</a></div></div>`;
     document.getElementById('act').onclick = fn;
     document.getElementById('other').onclick = () => { location.href = otherUrl; };
     document.getElementById('all').onclick = resetAll;

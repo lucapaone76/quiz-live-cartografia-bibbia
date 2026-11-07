@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz — Numeri dei partecipanti</title>
+<style>
+  :root { --bg1:#1b1464; --bg2:#4a1d8f; --card:rgba(255,255,255,.08); --gold:#fbbf24; --txt:#fff; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--txt);
+         background: linear-gradient(160deg,var(--bg1),var(--bg2)); }
+  main { max-width:900px; margin:0 auto; padding:20px 20px 48px; display:flex; flex-direction:column; gap:16px; }
+  .top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  h1 { font-size:26px; margin:0; }
+  .tag { font-size:13px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .btns { display:flex; gap:8px; flex-wrap:wrap; }
+  .btns a, .btns button { background:none; color:#fff; border:1.5px solid rgba(255,255,255,.4); border-radius:12px; padding:8px 14px; font-size:14px; cursor:pointer; text-decoration:none; }
+  .info { font-size:14px; opacity:.85; margin:0; }
+  .search { font-size:17px; padding:10px 14px; border-radius:12px; border:0; width:100%; max-width:360px; }
+  .wrap { background:var(--card); border-radius:14px; overflow:hidden; }
+  table { border-collapse:collapse; width:100%; }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid rgba(255,255,255,.1); }
+  th { background:#2a1a6e; font-size:13px; font-weight:700; }
+  td.num { width:90px; text-align:center; }
+  td.num b { display:inline-block; min-width:52px; background:var(--gold); color:#2a1470; border-radius:12px; padding:4px 10px; font-size:22px; }
+  td.name { font-size:20px; font-weight:600; }
+  td.when { font-size:13px; opacity:.7; white-space:nowrap; }
+  .center { text-align:center; margin-top:12vh; display:flex; flex-direction:column; gap:14px; align-items:center; }
+  input#pin { font-size:22px; padding:12px 16px; border-radius:12px; border:0; text-align:center; width:220px; }
+  button.main { background:#fff; color:#2a1470; border:0; border-radius:14px; padding:12px 24px; font-size:18px; font-weight:800; cursor:pointer; }
+  .err { color:#fecaca; min-height:22px; }
+  @media print {
+    body { background:#fff; color:#000; }
+    .btns, .search, .info { display:none; }
+    .wrap { background:none; }
+    th { background:#eee; color:#000; }
+    td.num b { background:none; color:#000; border:1px solid #000; }
+    td.when { display:none; }
+  }
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'https://igadvmjzyrylaxpacrew.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_fIO4K5Q3L63lnp4iuwn_hw_qZOc0NAb';
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+
+const app = document.getElementById('app');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const url = page => new URL(page, location.href).href;
+const time = t => t ? new Date(t).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+
+let pin = sessionStorage.getItem('quiz_pin') || '';
+let rows = [], filter = '', timer = null, busy = false;
+
+if (!pin) askPin(); else start();
+
+function askPin(msg = '') {
+  clearInterval(timer); timer = null;
+  app.innerHTML = `<div class="center"><div style="font-size:56px">🔢</div><h1>Numeri dei partecipanti</h1>
+    <p><input id="pin" type="password" placeholder="PIN" autofocus></p><p class="err">${esc(msg)}</p>
+    <button class="main" id="go">Entra</button></div>`;
+  const go = () => { pin = document.getElementById('pin').value.trim(); sessionStorage.setItem('quiz_pin', pin); start(); };
+  document.getElementById('go').onclick = go;
+  document.getElementById('pin').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
+async function start() {
+  await load();
+  if (!timer) timer = setInterval(load, 5000);      // si aggiorna da sola ogni 5 secondi
+}
+
+async function load() {
+  if (busy) return; busy = true;
+  try {
+    const { data, error } = await sb.rpc('quiz_admin_players', { p_pin: pin });
+    if (error) {
+      if (error.code === 'P0001') { sessionStorage.removeItem('quiz_pin'); return askPin('PIN errato'); }
+      return;                                         // rete: si riprova al prossimo giro
+    }
+    rows = data || [];
+    if (!document.getElementById('list')) renderShell();
+    renderRows();
+  } finally { busy = false; }
+}
+
+function renderShell() {
+  app.innerHTML = `
+    <div class="top">
+      <div><div class="tag">Quiz · Cartografia della Parola</div><h1>Numeri dei partecipanti</h1></div>
+      <div class="btns">
+        <a href="${esc(url('presenter.html?quiz=1'))}">Pannello quiz 1</a>
+        <a href="${esc(url('presenter.html?quiz=2'))}">Pannello quiz 2</a>
+        <a href="${esc(url('admin.html?quiz=1'))}">📋 Risposte di tutti</a>
+        <button id="csv">⬇ Scarica (Excel)</button>
+        <button id="prn">🖨 Stampa</button>
+      </div>
+    </div>
+    <p class="info" id="count"></p>
+    <input class="search" id="q" placeholder="Cerca un nome o un numero…" value="${esc(filter)}">
+    <div class="wrap"><table>
+      <thead><tr><th style="text-align:center">Numero</th><th>Nome</th><th>Entrato</th><th>Ultimo cambio nome</th></tr></thead>
+      <tbody id="list"></tbody>
+    </table></div>`;
+  document.getElementById('q').oninput = e => { filter = e.target.value; renderRows(); };
+  document.getElementById('csv').onclick = downloadCsv;
+  document.getElementById('prn').onclick = () => window.print();
+}
+
+function renderRows() {
+  const f = filter.trim().toLowerCase();
+  const shown = f ? rows.filter(r => String(r.number) === f || r.name.toLowerCase().includes(f)) : rows;
+  document.getElementById('count').textContent =
+    `${rows.length} partecipanti. Il numero viene dato a ogni telefono quando scrive il nome per la prima volta e non cambia, anche se la persona cambia nome. «Azzera tutto» cancella nomi e numeri: si riparte da 1. La pagina si aggiorna da sola.`;
+  document.getElementById('list').innerHTML = shown.map(r => {
+    const renamed = new Date(r.renamed_at) - new Date(r.joined_at) > 2000 ? time(r.renamed_at) : '';
+    return `<tr><td class="num"><b>${r.number}</b></td><td class="name">${esc(r.name)}</td><td class="when">${time(r.joined_at)}</td><td class="when">${renamed}</td></tr>`;
+  }).join('') || `<tr><td colspan="4" style="padding:24px;opacity:.7">${rows.length ? 'Nessun risultato.' : 'Nessun partecipante, per ora.'}</td></tr>`;
+}
+
+function downloadCsv() {
+  const cell = v => `"${String(v).replace(/"/g, '""')}"`;
+  const lines = [['Numero', 'Nome'].map(cell).join(';'), ...rows.map(r => [r.number, r.name].map(cell).join(';'))];
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'numeri-partecipanti.csv'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+</script>
+</body>
+</html>
