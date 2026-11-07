@@ -73,8 +73,11 @@ const remember = (k, v) => {
 };
 const recall = k => { let v = null; try { v = localStorage.getItem(k); } catch {} return v || (cookie(k) ? decodeURIComponent(cookie(k)) : null); };
 
+// crypto.randomUUID manca sui telefoni più vecchi (iOS < 15.4, Chrome < 92): in quel caso si genera lo stesso tipo di codice a mano.
+const newId = () => (crypto.randomUUID ? crypto.randomUUID()
+  : '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)));
 let sid = recall('quiz_sid');
-if (!sid) sid = crypto.randomUUID();
+if (!/^[0-9a-f-]{36}$/i.test(sid || '')) sid = newId();
 remember('quiz_sid', sid);
 let name = recall('quiz_name');
 
@@ -117,7 +120,8 @@ function startLoop() { shownKey = ''; tick(); if (!timer) timer = setInterval(ti
 async function getQuestion(id) {
   if (!qCache[id]) {
     const { data } = await sb.from('quiz_questions').select('*').eq('id', id).single();
-    qCache[id] = data;
+    if (data) qCache[id] = data;
+    return data;
   }
   return qCache[id];
 }
@@ -128,7 +132,17 @@ function show(html) {
   document.getElementById('chg').onclick = () => askName();
 }
 
+// Un aggiornamento alla volta: con una rete lenta i controlli ogni 1,5 s non si sovrappongono
+// (una risposta vecchia potrebbe altrimenti ridisegnare lo schermo sopra una nuova).
+let ticking = false, again = false;
 async function tick() {
+  if (ticking) { again = true; return; }
+  ticking = true;
+  try { await refresh(); } catch (e) { console.warn(e); }
+  finally { ticking = false; if (again) { again = false; tick(); } }
+}
+
+async function refresh() {
   const { data: st, error } = await sb.from('quiz_state').select('*').eq('id', QUIZ).single();
   if (error || !st) return;
   const k = `${st.phase}:${st.current_question}:${mine[st.current_question] ?? '-'}`;
@@ -154,7 +168,8 @@ async function tick() {
       ${pod ? `<p class="note">I primi tre</p><div class="podium">${pod}</div>` : ''}</div>`);
   }
 
-  const q = await getQuestion(st.current_question);
+  const q = st.current_question ? await getQuestion(st.current_question) : null;
+  if (!q) return;                                   // domanda non ancora caricata: si riprova al prossimo giro
   const my = mine[q.id];
   results = null; key = null; myScore = null;
   if (st.phase === 'results' || st.phase === 'revealed') {

@@ -71,8 +71,9 @@ document.title = 'Presentatore — ' + TITLES[QUIZ];
 const LETTERS = ['A','B','C','D'];
 const app = document.getElementById('app');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const base = location.href.replace(/presenter\.html.*$/, '');
-const voteUrl = `${base}vote.html?quiz=${QUIZ}`;
+// Indirizzi costruiti rispetto alla pagina: funzionano anche se il pannello è aperto senza ".html".
+const voteUrl = new URL(`vote.html?quiz=${QUIZ}`, location.href).href;
+const otherUrl = new URL(`presenter.html?quiz=${OTHER}`, location.href).href;
 
 let pin = sessionStorage.getItem('quiz_pin') || '';
 let questions = [];
@@ -102,27 +103,42 @@ async function start() {
   if (!timer) timer = setInterval(tick, 1500);
 }
 
-async function setState(phase, question) {
-  const { error } = await sb.rpc('quiz_set_state', { p_pin: pin, p_quiz: QUIZ, p_phase: phase, p_question: question });
-  if (error) { sessionStorage.removeItem('quiz_pin'); return askPin('PIN errato'); }
-  tick();
+// Chiama una funzione protetta dal PIN. Solo se il PIN è sbagliato (errore P0001 dal database) lo richiede;
+// per un problema di rete lascia il PIN e chiede di riprovare.
+async function admin(fn, args) {
+  const { error } = await sb.rpc(fn, { p_pin: pin, ...args });
+  if (!error) { shownKey = ''; tick(); return true; }
+  if (error.code === 'P0001') { sessionStorage.removeItem('quiz_pin'); askPin('PIN errato'); }
+  else alert('Connessione assente o lenta: il comando non è arrivato. Riprova.');
+  return false;
 }
+
+const setState = (phase, question) => admin('quiz_set_state', { p_quiz: QUIZ, p_phase: phase, p_question: question });
 
 async function resetQuiz() {
   if (!confirm(`Azzerare tutti i voti del ${TITLES[QUIZ].split(' · ')[0]}? I nomi dei partecipanti restano.`)) return;
-  const { error } = await sb.rpc('quiz_reset', { p_pin: pin, p_quiz: QUIZ });
-  if (error) { sessionStorage.removeItem('quiz_pin'); return askPin('PIN errato'); }
-  shownKey = ''; tick();
+  admin('quiz_reset', { p_quiz: QUIZ });
 }
 
 async function resetAll() {
   if (!confirm('Azzerare TUTTO: voti di entrambi i quiz e nomi dei partecipanti?')) return;
-  const { error } = await sb.rpc('quiz_reset_all', { p_pin: pin });
-  if (error) { sessionStorage.removeItem('quiz_pin'); return askPin('PIN errato'); }
-  shownKey = ''; tick();
+  admin('quiz_reset_all', {});
 }
 
+let ticking = false, again = false;
 async function tick() {
+  if (ticking) { again = true; return; }
+  ticking = true;
+  try { await refresh(); } catch (e) { console.warn(e); }
+  finally { ticking = false; if (again) { again = false; tick(); } }
+}
+
+async function refresh() {
+  if (!questions.length) {
+    const { data } = await sb.from('quiz_questions').select('*').eq('quiz', QUIZ).order('position');
+    questions = data || [];
+    if (!questions.length) { app.innerHTML = '<div class="center"><h1>Non riesco a caricare le domande</h1><p>Controlla la connessione: riprovo da solo.</p></div>'; shownKey = ''; return; }
+  }
   const { data } = await sb.from('quiz_state').select('*').eq('id', QUIZ).single();
   if (!data) return;
   st = data;
@@ -186,7 +202,7 @@ function render(q) {
     document.getElementById('act').onclick = fn;
     document.getElementById('rst').onclick = resetQuiz;
     document.getElementById('all').onclick = resetAll;
-    document.getElementById('other').onclick = () => { location.href = `${base}presenter.html?quiz=${OTHER}`; };
+    document.getElementById('other').onclick = () => { location.href = otherUrl; };
     return;
   }
   if (st.phase === 'finished') {
@@ -201,7 +217,7 @@ function render(q) {
       <button class="ghost" id="other">Vai al quiz ${OTHER}</button>
       <button class="ghost" id="all">Azzera tutto (anche i nomi)</button></div></div>`;
     document.getElementById('act').onclick = fn;
-    document.getElementById('other').onclick = () => { location.href = `${base}presenter.html?quiz=${OTHER}`; };
+    document.getElementById('other').onclick = () => { location.href = otherUrl; };
     document.getElementById('all').onclick = resetAll;
     return;
   }
