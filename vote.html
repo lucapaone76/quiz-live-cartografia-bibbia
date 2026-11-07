@@ -11,6 +11,8 @@
          background: linear-gradient(160deg,var(--bg1),var(--bg2)); display:flex; justify-content:center; }
   main { width:100%; max-width:520px; padding:16px 16px 40px; display:flex; flex-direction:column; gap:16px; }
   .bar-top { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:14px; opacity:.85; }
+  .mynum { font-size:20px; margin:0; } .mynum b { background:var(--gold); color:#2a1470; border-radius:12px; padding:2px 12px; font-size:26px; }
+  .bar-top .num { background:var(--gold); color:#2a1470; border-radius:999px; padding:2px 9px; font-size:13px; margin-right:4px; }
   .bar-top button { background:none; border:0; color:inherit; text-decoration:underline; font-size:14px; cursor:pointer; padding:0; }
   .tag { font-size:13px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
   h1 { font-size:24px; line-height:1.25; margin:0; }
@@ -80,6 +82,7 @@ let sid = recall('quiz_sid');
 if (!/^[0-9a-f-]{36}$/i.test(sid || '')) sid = newId();
 remember('quiz_sid', sid);
 let name = recall('quiz_name');
+let myNum = null;   // numero fisso del partecipante: assegnato al primo nome, non cambia se cambia il nome
 
 const mineKey = `quiz_mine_${QUIZ}`;
 const loadMine = () => { try { return JSON.parse(localStorage.getItem(mineKey) || '{}'); } catch { return {}; } };
@@ -112,7 +115,21 @@ async function join(n) {
   const { error } = await sb.rpc('quiz_join', { p_session: sid, p_name: n });
   if (error) return false;
   name = n; remember('quiz_name', n);
+  await loadNumber(false);
   return true;
+}
+
+// Legge il numero di questo telefono. Se manca (dopo «Azzera tutto» i nomi sono cancellati)
+// si iscrive di nuovo con lo stesso nome e riceve un nuovo numero.
+async function loadNumber(rejoin = true) {
+  const { data, error } = await sb.rpc('quiz_my_number', { p_session: sid });
+  if (error) return;
+  if (data == null && rejoin && name) {
+    const { error: e2 } = await sb.rpc('quiz_join', { p_session: sid, p_name: name });
+    if (!e2) return loadNumber(false);
+    return;
+  }
+  if (data !== myNum) { myNum = data; shownKey = ''; }
 }
 
 function startLoop() { shownKey = ''; tick(); if (!timer) timer = setInterval(tick, 1500); }
@@ -126,7 +143,7 @@ async function getQuestion(id) {
   return qCache[id];
 }
 
-const header = () => `<div class="bar-top"><span>${esc(TITLES[QUIZ])}</span><span>👤 ${esc(name)} · <button id="chg">cambia</button></span></div>`;
+const header = () => `<div class="bar-top"><span>${esc(TITLES[QUIZ])}</span><span>${myNum ? `<b class="num">n. ${myNum}</b> ` : ''}👤 ${esc(name)} · <button id="chg">cambia</button></span></div>`;
 function show(html) {
   app.innerHTML = header() + html;
   document.getElementById('chg').onclick = () => askName();
@@ -134,11 +151,14 @@ function show(html) {
 
 // Un aggiornamento alla volta: con una rete lenta i controlli ogni 1,5 s non si sovrappongono
 // (una risposta vecchia potrebbe altrimenti ridisegnare lo schermo sopra una nuova).
-let ticking = false, again = false;
+let ticking = false, again = false, ticks = 0;
 async function tick() {
   if (ticking) { again = true; return; }
   ticking = true;
-  try { await refresh(); } catch (e) { console.warn(e); }
+  try {
+    if (++ticks % 20 === 1) await loadNumber();   // ogni 30 secondi circa: controlla il numero (e si riscrive se è stato azzerato tutto)
+    await refresh();
+  } catch (e) { console.warn(e); }
   finally { ticking = false; if (again) { again = false; tick(); } }
 }
 
@@ -151,7 +171,7 @@ async function refresh() {
   if (st.phase === 'waiting') {
     shownKey = k;
     if (Object.keys(mine).length) { mine = {}; saveMine(); }   // quiz azzerato: si riparte da capo
-    return show(`<div class="center"><div class="big">⏳</div><h1>Il quiz sta per iniziare</h1><p class="note">Resta su questa pagina.</p></div>`);
+    return show(`<div class="center"><div class="big">⏳</div><h1>Il quiz sta per iniziare</h1>${myNum ? `<p class="mynum">Il tuo numero è <b>${myNum}</b></p>` : ''}<p class="note">Resta su questa pagina.</p></div>`);
   }
   if (st.phase === 'finished') {
     shownKey = k;
