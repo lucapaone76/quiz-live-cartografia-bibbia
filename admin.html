@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz — Risposte di tutti</title>
+<style>
+  :root { --bg1:#1b1464; --bg2:#4a1d8f; --card:rgba(255,255,255,.08); --ok:#22c55e; --ko:#ef4444; --gold:#fbbf24; --txt:#fff; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--txt);
+         background: linear-gradient(160deg,var(--bg1),var(--bg2)); }
+  main { max-width:1280px; margin:0 auto; padding:20px 20px 48px; display:flex; flex-direction:column; gap:16px; }
+  .top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  h1 { font-size:26px; margin:0; }
+  .tag { font-size:13px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; }
+  .btns { display:flex; gap:8px; flex-wrap:wrap; }
+  .btns a, .btns button { background:none; color:#fff; border:1.5px solid rgba(255,255,255,.4); border-radius:12px; padding:8px 14px; font-size:14px; cursor:pointer; text-decoration:none; }
+  .btns .on { background:#fff; color:#2a1470; font-weight:700; }
+  .info { font-size:14px; opacity:.85; }
+  .wrap { overflow-x:auto; background:var(--card); border-radius:14px; }
+  table { border-collapse:collapse; width:100%; font-size:15px; }
+  th, td { padding:8px 10px; text-align:center; border-bottom:1px solid rgba(255,255,255,.1); white-space:nowrap; }
+  th { position:sticky; top:0; background:#2a1a6e; font-size:13px; font-weight:700; }
+  th.q { cursor:help; }
+  td.name, th.name { text-align:left; font-weight:600; }
+  td.ok  { background:rgba(34,197,94,.35); font-weight:700; }
+  td.ko  { background:rgba(239,68,68,.30); }
+  td.wait { opacity:.55; outline:1px dashed rgba(255,255,255,.35); outline-offset:-4px; }
+  td.none { opacity:.35; }
+  td.tot { font-weight:800; font-size:17px; }
+  tr.top3 td.name::before { margin-right:6px; }
+  tr.p1 td.name::before { content:'🥇'; } tr.p2 td.name::before { content:'🥈'; } tr.p3 td.name::before { content:'🥉'; }
+  tfoot td { font-size:13px; opacity:.85; border-bottom:0; }
+  .legend { font-size:14px; line-height:1.5; background:var(--card); border-radius:14px; padding:12px 16px; }
+  .legend ol { margin:6px 0 0; padding-left:22px; }
+  .legend b { color:var(--gold); }
+  .center { text-align:center; margin-top:12vh; display:flex; flex-direction:column; gap:14px; align-items:center; }
+  input { font-size:22px; padding:12px 16px; border-radius:12px; border:0; text-align:center; width:220px; }
+  button.main { background:#fff; color:#2a1470; border:0; border-radius:14px; padding:12px 24px; font-size:18px; font-weight:800; cursor:pointer; }
+  .err { color:#fecaca; min-height:22px; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'https://igadvmjzyrylaxpacrew.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_fIO4K5Q3L63lnp4iuwn_hw_qZOc0NAb';
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+
+const QUIZ = new URLSearchParams(location.search).get('quiz') === '2' ? 2 : 1;
+const TITLES = { 1: 'Quiz 1 · Cartografia della Parola', 2: 'Quiz 2 · Come approcciare il testo biblico' };
+document.title = 'Risposte — ' + TITLES[QUIZ];
+const LETTERS = ['A','B','C','D'];
+const app = document.getElementById('app');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const url = (page, q) => new URL(`${page}?quiz=${q}`, location.href).href;
+
+let pin = sessionStorage.getItem('quiz_pin') || '';
+let questions = [], timer = null, last = null, busy = false;
+
+if (!pin) askPin(); else start();
+
+function askPin(msg = '') {
+  clearInterval(timer); timer = null;
+  app.innerHTML = `<div class="center"><div style="font-size:56px">📋</div><h1>Risposte di tutti</h1><p class="tag">${esc(TITLES[QUIZ])}</p>
+    <p><input id="pin" type="password" placeholder="PIN" autofocus></p><p class="err">${esc(msg)}</p>
+    <button class="main" id="go">Entra</button></div>`;
+  const go = () => { pin = document.getElementById('pin').value.trim(); sessionStorage.setItem('quiz_pin', pin); start(); };
+  document.getElementById('go').onclick = go;
+  document.getElementById('pin').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
+async function start() {
+  const { data } = await sb.from('quiz_questions').select('id, position, text, options').eq('quiz', QUIZ).order('position');
+  questions = data || [];
+  await load();
+  if (!timer) timer = setInterval(load, 5000);      // si aggiorna da sola ogni 5 secondi
+}
+
+async function load() {
+  if (busy) return; busy = true;
+  try {
+    const [{ data: rows, error }, { data: st }] = await Promise.all([
+      sb.rpc('quiz_admin_answers', { p_pin: pin, p_quiz: QUIZ }),
+      sb.from('quiz_state').select('*').eq('id', QUIZ).single()
+    ]);
+    if (error) {
+      if (error.code === 'P0001') { sessionStorage.removeItem('quiz_pin'); return askPin('PIN errato'); }
+      return;                                         // rete: si riprova al prossimo giro
+    }
+    last = build(rows || []);
+    render(last, st);
+  } finally { busy = false; }
+}
+
+// Una riga per persona: risposta a ogni domanda, risposte giuste (solo domande che contano) e tempo totale.
+function build(rows) {
+  const people = new Map(), keys = {};
+  for (const r of rows) {
+    keys[r.q_position] = r.correct_index;
+    if (!people.has(r.session_id)) people.set(r.session_id, { name: r.name, ans: {}, correct: 0, seconds: 0 });
+    const p = people.get(r.session_id);
+    const ok = r.choice === r.correct_index;
+    p.ans[r.q_position] = { choice: r.choice, ok, counted: r.counted };
+    if (ok && r.counted) { p.correct++; p.seconds += Number(r.seconds); }
+  }
+  const list = [...people.values()].sort((a, b) => b.correct - a.correct || a.seconds - b.seconds || a.name.localeCompare(b.name));
+  list.forEach((p, i) => p.place = i + 1);
+  return { list, keys };
+}
+
+function render({ list, keys }, st) {
+  const phase = { waiting: 'in attesa', voting: 'voto aperto', results: 'voti chiusi', revealed: 'risposta mostrata', finished: 'concluso' }[st?.phase] || '';
+  const head = questions.map(q => `<th class="q" title="${esc(q.text)}">D${q.position}</th>`).join('');
+  const body = list.map(p => {
+    const cells = questions.map(q => {
+      const a = p.ans[q.position];
+      if (!a) return '<td class="none">—</td>';
+      const cls = !a.counted ? 'wait' : a.ok ? 'ok' : 'ko';
+      return `<td class="${cls}" title="${esc(q.options[a.choice])}">${LETTERS[a.choice]}</td>`;
+    }).join('');
+    const medal = p.place <= 3 && p.correct > 0 ? ` top3 p${p.place}` : '';
+    return `<tr class="${medal}"><td>${p.place}</td><td class="name">${esc(p.name)}</td>${cells}<td class="tot">${p.correct}</td><td>${p.seconds.toFixed(1)}</td></tr>`;
+  }).join('');
+  const foot = questions.map(q => {
+    const ans = list.filter(p => p.ans[q.position]);
+    const ok = ans.filter(p => p.ans[q.position].ok).length;
+    return `<td>${ans.length ? `${ok}/${ans.length}` : ''}</td>`;
+  }).join('');
+  const legend = questions.map(q => `<li>${esc(q.text)}${keys[q.position] !== undefined ? ` — giusta: <b>${LETTERS[keys[q.position]]}</b> ${esc(q.options[keys[q.position]])}` : ''}</li>`).join('');
+
+  app.innerHTML = `
+    <div class="top">
+      <div><div class="tag">${esc(TITLES[QUIZ])} · ${esc(phase)}</div><h1>Risposte di tutti</h1></div>
+      <div class="btns">
+        <a href="${esc(url('admin.html', 1))}" class="${QUIZ === 1 ? 'on' : ''}">Quiz 1</a>
+        <a href="${esc(url('admin.html', 2))}" class="${QUIZ === 2 ? 'on' : ''}">Quiz 2</a>
+        <button id="csv">⬇ Scarica (Excel)</button>
+        <button id="ref">↻ Aggiorna</button>
+      </div>
+    </div>
+    <p class="info">${list.length} partecipanti con almeno una risposta. Verde: giusta · rosso: sbagliata · tratteggiata: risposta data ma la soluzione non è ancora stata mostrata (non conta ancora) · —: non ha risposto.
+      «Giuste» conta solo le domande con la risposta già mostrata; «Secondi» è il tempo di risposta sommato sulle risposte giuste (serve per lo spareggio). La pagina si aggiorna da sola.</p>
+    <div class="wrap"><table>
+      <thead><tr><th>#</th><th class="name">Nome</th>${head}<th>Giuste</th><th>Secondi</th></tr></thead>
+      <tbody>${body || `<tr><td colspan="${questions.length + 4}" style="padding:24px;opacity:.7">Nessuna risposta, per ora.</td></tr>`}</tbody>
+      <tfoot><tr><td></td><td class="name">Hanno indovinato</td>${foot}<td></td><td></td></tr></tfoot>
+    </table></div>
+    <div class="legend"><b>Domande</b><ol>${legend}</ol></div>`;
+  document.getElementById('ref').onclick = load;
+  document.getElementById('csv').onclick = () => downloadCsv(list);
+}
+
+function downloadCsv(list) {
+  const cell = v => `"${String(v).replace(/"/g, '""')}"`;
+  const lines = [['Posizione', 'Nome', ...questions.map(q => `D${q.position}`), 'Giuste', 'Secondi'].map(cell).join(';')];
+  for (const p of list) {
+    const ans = questions.map(q => { const a = p.ans[q.position]; return a ? `${LETTERS[a.choice]}${a.counted ? (a.ok ? ' ✓' : ' ✗') : ''}` : ''; });
+    lines.push([p.place, p.name, ...ans, p.correct, p.seconds.toFixed(1).replace('.', ',')].map(cell).join(';'));
+  }
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `risposte-quiz-${QUIZ}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+</script>
+</body>
+</html>

@@ -51,6 +51,18 @@
   input { font-size:22px; padding:12px 16px; border-radius:12px; border:0; text-align:center; width:220px; }
   .err { color:#fecaca; min-height:22px; }
   .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  .modal-bg { position:fixed; inset:0; background:rgba(10,6,40,.75); display:flex; align-items:center; justify-content:center; z-index:10; padding:20px; }
+  .modal { background:#2a1a6e; border:2px solid rgba(255,255,255,.25); border-radius:20px; padding:28px 30px; max-width:560px; width:100%;
+           display:flex; flex-direction:column; gap:16px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  .modal h2 { margin:0; font-size:26px; }
+  .modal p { margin:0; font-size:18px; line-height:1.4; opacity:.9; }
+  .modal .row button { font-size:18px; padding:14px 22px; border-radius:14px; cursor:pointer; font-weight:800; }
+  .modal .yes { background:#ef4444; color:#fff; border:0; }
+  .modal .yes.soft { background:#fff; color:#2a1470; }
+  .modal .no { background:none; color:#fff; border:2px solid rgba(255,255,255,.5); }
+  .tools { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-start; border-top:1px solid rgba(255,255,255,.15); padding-top:14px; }
+  .tools button, .tools a { background:none; color:#fff; border:1.5px solid rgba(255,255,255,.35); border-radius:12px; padding:8px 14px; font-size:14px; cursor:pointer; text-decoration:none; opacity:.85; }
+  .tools button:hover, .tools a:hover { opacity:1; }
 </style>
 </head>
 <body>
@@ -74,6 +86,7 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;
 // Indirizzi costruiti rispetto alla pagina: funzionano anche se il pannello è aperto senza ".html".
 const voteUrl = new URL(`vote.html?quiz=${QUIZ}`, location.href).href;
 const otherUrl = new URL(`presenter.html?quiz=${OTHER}`, location.href).href;
+const adminUrl = new URL(`admin.html?quiz=${QUIZ}`, location.href).href;
 
 let pin = sessionStorage.getItem('quiz_pin') || '';
 let questions = [];
@@ -115,13 +128,41 @@ async function admin(fn, args) {
 
 const setState = (phase, question) => admin('quiz_set_state', { p_quiz: QUIZ, p_phase: phase, p_question: question });
 
+// Conferma con due pulsanti sulla pagina (al posto della finestrella del browser).
+function ask(title, text, yes, soft = false) {
+  return new Promise(resolve => {
+    const bg = document.createElement('div');
+    bg.className = 'modal-bg';
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><h2>${esc(title)}</h2><p>${esc(text)}</p>
+      <div class="row"><button class="no">Annulla</button><button class="yes${soft ? ' soft' : ''}">${esc(yes)}</button></div></div>`;
+    const close = v => { bg.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
+    const onKey = e => { if (e.key === 'Escape') close(false); };
+    bg.querySelector('.no').onclick = () => close(false);
+    bg.querySelector('.yes').onclick = () => close(true);
+    bg.onclick = e => { if (e.target === bg) close(false); };
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(bg);
+    bg.querySelector('.no').focus();             // Invio per sbaglio annulla, non azzera
+  });
+}
+
 async function resetQuiz() {
-  if (!confirm(`Azzerare tutti i voti del ${TITLES[QUIZ].split(' · ')[0]}? I nomi dei partecipanti restano.`)) return;
+  const n = TITLES[QUIZ].split(' · ')[0];
+  if (!await ask(`Azzerare il ${n}?`, `Si cancellano tutte le risposte del ${n} e si torna alla schermata iniziale. I nomi dei partecipanti restano. Non si può annullare.`, `Sì, azzera il ${n}`)) return;
   admin('quiz_reset', { p_quiz: QUIZ });
 }
 
+// Interrompe il quiz e mostra subito il podio. Contano solo le domande con la risposta già mostrata:
+// se si interrompe durante il voto, quella domanda non vale.
+async function stopQuiz() {
+  if (!await ask('Interrompere il quiz?', 'Il quiz finisce adesso e compare la classifica. Contano solo le domande di cui hai già mostrato la risposta giusta.', 'Sì, interrompi', true)) return;
+  const idx = questions.findIndex(x => x.id === st.current_question);
+  const last = st.phase === 'revealed' ? questions[idx] : questions[idx - 1];
+  admin('quiz_set_state', { p_quiz: QUIZ, p_phase: 'finished', p_question: last ? last.id : null });
+}
+
 async function resetAll() {
-  if (!confirm('Azzerare TUTTO: voti di entrambi i quiz e nomi dei partecipanti?')) return;
+  if (!await ask('Azzerare tutto?', 'Si cancellano le risposte di entrambi i quiz e i nomi di tutti i partecipanti: dovranno riscriverli. Non si può annullare.', 'Sì, azzera tutto')) return;
   admin('quiz_reset_all', {});
 }
 
@@ -188,9 +229,16 @@ function nextAction(q) {
   }
 }
 
+const tools = (extra = '') => `<div class="tools">${extra}<button id="t-rst">↺ Azzera questo quiz</button>
+  <a href="${esc(adminUrl)}" target="_blank" rel="opener">📋 Risposte di tutti</a></div>`;
+function wireTools() {
+  const s = document.getElementById('t-stop'); if (s) s.onclick = stopQuiz;
+  document.getElementById('t-rst').onclick = resetQuiz;
+}
+
 function render(q) {
   const [label, fn] = nextAction(q);
-  if (st.phase === 'waiting' || !q) {
+  if (st.phase === 'waiting' || (!q && st.phase !== 'finished')) {
     app.innerHTML = `<div class="center"><span class="tag">${esc(TITLES[QUIZ])} · ${questions.length} domande</span>
       <h1>Inquadra il codice e scrivi il tuo nome</h1>
       <div class="qr">${qrSvg(voteUrl)}</div>
@@ -198,7 +246,8 @@ function render(q) {
       <button class="main" id="act">${label}</button>
       <div class="row"><button class="ghost" id="rst">Azzera i voti di questo quiz</button>
       <button class="ghost" id="all">Azzera tutto (anche i nomi)</button>
-      <button class="ghost" id="other">Vai al quiz ${OTHER}</button></div></div>`;
+      <button class="ghost" id="other">Vai al quiz ${OTHER}</button>
+      <a class="ghost" style="text-decoration:none;display:inline-block" href="${esc(adminUrl)}" target="_blank" rel="opener">📋 Risposte di tutti</a></div></div>`;
     document.getElementById('act').onclick = fn;
     document.getElementById('rst').onclick = resetQuiz;
     document.getElementById('all').onclick = resetAll;
@@ -208,14 +257,17 @@ function render(q) {
   if (st.phase === 'finished') {
     const medals = ['🥇','🥈','🥉'];
     const order = [2, 1, 3].map(p => board.find(r => r.place === p)).filter(Boolean);
+    const cur = questions.find(x => x.id === st.current_question);
+    const counted = cur ? cur.position : 0;   // domande che contano (meno di tutte se il quiz è stato interrotto)
     const pod = order.map(r => `<div class="step p${r.place}"><div class="medal">${medals[r.place - 1]}</div>
-      <div class="who">${esc(r.name)}</div><div class="pts">${r.correct} su ${questions.length}</div></div>`).join('');
+      <div class="who">${esc(r.name)}</div><div class="pts">${r.correct} su ${counted}</div></div>`).join('');
     app.innerHTML = `<div class="center"><span class="tag">${esc(TITLES[QUIZ])}</span><h1>Quiz concluso 🎉</h1>
       ${pod ? `<div class="podium">${pod}</div>` : '<p>Nessuna risposta giusta registrata.</p>'}
-      <p class="link">Partecipanti: <b>${players}</b>. A parità di risposte giuste vince chi ha risposto più in fretta.</p>
+      <p class="link">${counted < questions.length ? `Quiz interrotto: contano ${counted} domande su ${questions.length}. ` : ''}Partecipanti: <b>${players}</b>. A parità di risposte giuste vince chi ha risposto più in fretta.</p>
       <div class="row"><button class="main" id="act">${label}</button>
       <button class="ghost" id="other">Vai al quiz ${OTHER}</button>
-      <button class="ghost" id="all">Azzera tutto (anche i nomi)</button></div></div>`;
+      <button class="ghost" id="all">Azzera tutto (anche i nomi)</button>
+      <a class="ghost" style="text-decoration:none;display:inline-block" href="${esc(adminUrl)}" target="_blank" rel="opener">📋 Risposte di tutti</a></div></div>`;
     document.getElementById('act').onclick = fn;
     document.getElementById('other').onclick = () => { location.href = otherUrl; };
     document.getElementById('all').onclick = resetAll;
@@ -241,8 +293,10 @@ function render(q) {
   app.innerHTML = `<div class="top"><span class="tag">${esc(TITLES[QUIZ])} · Domanda ${q.position} di ${questions.length}</span>
       <span class="link">Partecipa: <code>${esc(voteUrl)}</code></span></div>
     <h1>${esc(q.text)}</h1><div class="opts">${opts}</div>${explain}
-    <div class="bottom"><span class="count">${info}</span><button class="main" id="act">${label}</button></div>`;
+    <div class="bottom"><span class="count">${info}</span><button class="main" id="act">${label}</button></div>
+    ${tools('<button id="t-stop">⏹ Interrompi e mostra la classifica</button>')}`;
   document.getElementById('act').onclick = fn;
+  wireTools();
   requestAnimationFrame(() => requestAnimationFrame(() => app.querySelectorAll('.bar').forEach(b => { b.style.width = b.dataset.w + '%'; })));
 }
 </script>

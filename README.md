@@ -7,6 +7,7 @@ Due quiz dal vivo per la catechesi su come leggere la Bibbia, senza account per 
 | Quiz 1 (parte 1, 12 domande) | partecipanti | `vote.html?quiz=1` |
 | Quiz 2 (parte 2, 7 domande) | partecipanti | `vote.html?quiz=2` |
 | Pannello del quiz 1 / 2 | chi presenta (serve il PIN) | `presenter.html?quiz=1`, `presenter.html?quiz=2` |
+| Risposte di tutti, quiz 1 / 2 | chi presenta (serve il PIN) | `admin.html?quiz=1`, `admin.html?quiz=2` |
 | Scelta del quiz | tutti | `index.html` |
 
 ## Come funziona
@@ -15,7 +16,9 @@ Due quiz dal vivo per la catechesi su come leggere la Bibbia, senza account per 
 - **Per ogni domanda** il presentatore: avvia → chiude i voti e mostra le percentuali (e quante persone per risposta, senza nomi) → mostra la risposta giusta, con la nota e, se c'è, un'immagine (domanda 2: il minatore di Prov 25,2).
 - **Punteggio**: dopo ogni risposta rivelata il partecipante vede quante ne ha indovinate finora.
 - **Classifica**: a quiz concluso, sullo schermo e sui telefoni compaiono i primi tre. A parità di risposte giuste vince chi ha risposto più in fretta. Ogni quiz ha la sua classifica (due vincitori).
-- **Azzerare**: dal pannello, «Ricomincia questo quiz» o «Azzera i voti di questo quiz» cancella i voti di quel quiz; «Azzera tutto» cancella i voti di entrambi e i nomi.
+- **Interrompere**: durante le domande, «⏹ Interrompi e mostra la classifica» chiude il quiz e mostra il podio. Contano solo le domande di cui è già stata mostrata la risposta giusta (se si interrompe durante il voto, quella domanda non vale); sui telefoni compare «Hai indovinato X su N» con N = domande che contano.
+- **Azzerare**: «↺ Azzera questo quiz» (sempre disponibile, anche durante le domande) cancella i voti di quel quiz e torna all'inizio; «Azzera tutto» cancella i voti di entrambi e i nomi. Ogni azzeramento e l'interruzione chiedono conferma con due pulsanti («Annulla» è quello selezionato, così un Invio per sbaglio non cancella niente).
+- **Risposte di tutti** (`admin.html`, con PIN, si apre dal pannello con «📋 Risposte di tutti»): una riga per persona con la risposta data a ogni domanda (verde giusta, rosso sbagliata, tratteggiata se la soluzione non è ancora stata mostrata), il totale delle giuste e i secondi per lo spareggio; in fondo quanti hanno indovinato ogni domanda. Si aggiorna da sola ogni 5 secondi e si scarica in CSV per Excel.
 
 ## Dati (Supabase)
 
