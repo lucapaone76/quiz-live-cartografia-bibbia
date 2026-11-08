@@ -23,7 +23,7 @@ Pagina aperta a tutti, senza nome e senza Supabase. Si scrive il brano e si sceg
 - **Gemini**: non accetta il testo nel link. La pagina copia il prompt negli appunti e apre Gemini; la persona lo incolla.
 - «Copia solo il testo» serve per qualsiasi altra app. Il telefono ricorda l'ultimo brano scritto.
 
-Il prompt è nella pagina stessa (funzione `PROMPT`) ed è lo stesso della slide 11 della parte 2: se cambi l'uno, cambia anche l'altro. Il QR code della slide 12 (`slides/src/assets/qr-approfondisci.svg`) lo genera `make_slides.py`.
+Il prompt è nella pagina stessa (funzione `PROMPT`) ed è lo stesso della slide 11 della parte 2: se cambi l'uno, cambia anche l'altro. Il prompt chiede all'app di leggere prima `metodo-lettura-bibbia.md`: la catechesi unificata in italiano controllato (regole ispirate ad ASD-STE100), servita come testo semplice da GitHub Pages. Il QR code della slide 12 (`slides/src/assets/qr-approfondisci.svg`) lo genera `make_slides.py`.
 
 ## Come funziona
 
