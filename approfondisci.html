@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Approfondisci un brano — Cartografia della Parola</title>
+<meta name="description" content="Approfondisci da solo un brano della Bibbia con Claude, ChatGPT o Gemini, seguendo il metodo della catechesi Cartografia della Parola.">
+<style>
+  :root { --ink:#2a1470; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:#fff;
+         background:linear-gradient(160deg,#1b1464,#4a1d8f); display:flex; justify-content:center; }
+  main { width:100%; max-width:560px; padding:28px 16px 40px; display:flex; flex-direction:column; gap:16px; }
+  h1 { font-size:26px; line-height:1.2; margin:0; text-align:center; }
+  .sub { text-align:center; opacity:.85; margin:0; font-size:15px; line-height:1.4; }
+  label { font-weight:700; font-size:17px; }
+  input { font-size:20px; padding:14px 16px; border-radius:14px; border:0; width:100%; margin-top:8px; color:#111; }
+  .err { color:#fecaca; min-height:20px; margin:4px 0 0; font-size:15px; }
+  .btn { display:block; width:100%; background:#fff; color:var(--ink); text-decoration:none; border:0; border-radius:16px;
+         padding:16px 18px; font-size:19px; font-weight:800; text-align:center; cursor:pointer; font-family:inherit; }
+  .btn small { display:block; font-weight:500; font-size:14px; opacity:.8; margin-top:4px; }
+  .btn:active { transform:scale(.98); }
+  .btn.ghost { background:transparent; color:#fff; border:2px solid rgba(255,255,255,.6); font-size:16px; padding:12px; }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#22c55e; color:#fff; font-weight:700;
+           padding:12px 18px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.3); opacity:0; transition:opacity .2s; pointer-events:none; }
+  .toast.on { opacity:1; }
+  details { background:rgba(255,255,255,.1); border-radius:14px; padding:12px 16px; }
+  summary { cursor:pointer; font-weight:700; }
+  pre { white-space:pre-wrap; font-family:inherit; font-size:14px; line-height:1.45; margin:12px 0 0; }
+  .note { font-size:14px; opacity:.85; line-height:1.45; margin:0; }
+  .note a { color:#fff; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Approfondisci un brano della Bibbia</h1>
+  <p class="sub">Con l'intelligenza artificiale, seguendo il metodo della catechesi: la frase che colpisce, il contesto, i passi paralleli, le parole e la preghiera.</p>
+
+  <div>
+    <label for="brano">Quale brano vuoi approfondire?</label>
+    <input id="brano" placeholder="es. Lc 5,1-11" autocomplete="off" enterkeyhint="done">
+    <p class="err" id="err"></p>
+  </div>
+
+  <a class="btn" id="claude" href="https://claude.ai/new" target="_blank" rel="noopener">Apri in Claude<small>Il testo è già scritto: premi invio</small></a>
+  <a class="btn" id="chatgpt" href="https://chatgpt.com/" target="_blank" rel="noopener">Apri in ChatGPT<small>Il testo è già scritto: premi invio</small></a>
+  <a class="btn" id="gemini" href="https://gemini.google.com/app" target="_blank" rel="noopener">Copia e apri Gemini<small>Incolla il testo nella casella e premi invio</small></a>
+  <button class="btn ghost" id="copy" type="button">📋 Copia solo il testo, per un'altra app</button>
+
+  <details>
+    <summary>Leggi il testo che verrà inviato</summary>
+    <pre id="testo"></pre>
+  </details>
+
+  <p class="note">L'intelligenza artificiale può sbagliare un versetto o una citazione: controlla sempre il testo sulla <a href="https://www.bibbiaedu.it/" target="_blank" rel="noopener">Bibbia CEI su BibbiaEdu</a>. Ed è un aiuto, non sostituisce la preghiera, la comunità e il confronto con un sacerdote.</p>
+  <p class="note"><a href="index.html">← Cartografia della Parola: slide e quiz</a></p>
+</main>
+<div class="toast" id="toast">Testo copiato</div>
+
+<script>
+const PROMPT = brano => `Accompagnami ad approfondire ${brano} seguendo un metodo cattolico di lettura della Bibbia. Rispondi in italiano, con risposte brevi, un passo alla volta: alla fine di ogni passo fermati e aspetta la mia risposta.
+
+1. INIZIO. Invitami a un minuto di silenzio e a una breve preghiera allo Spirito Santo, Autore principale della Scrittura. Poi dammi il link al brano sulla Bibbia CEI 2008 (www.bibbiaedu.it) e chiedimi di leggerlo due volte. Non riassumerlo e non commentarlo ancora.
+
+2. LA FRASE CHE MI COLPISCE. Chiedimi quale frase mi ha colpito di più alla seconda lettura. Tutto il resto parte da lì.
+
+3. TRE VIE. Proponimi tre vie per approfondire quella frase e lasciami scegliere (non serve farle tutte):
+   a) Il contesto: che cosa c'è subito prima e subito dopo; il contesto storico, geografico, sociale e biblico (scene dell'Antico Testamento che il brano richiama).
+   b) I passi paralleli: altri passi della Bibbia che rafforzano o chiariscono questo ed evitano i fraintendimenti.
+   c) Le parole: traduzione letterale, parole greche o ebraiche importanti con il numero Strong e il link a Blue Letter Bible (utile per la lingua, non per l'interpretazione, perché è di area protestante).
+
+4. SE MI BLOCCO, usa la bussola dei quattro sensi:
+   N – Che cosa mi rivela su Dio e sul suo carattere? (senso letterale)
+   E – Come si manifesta qui Cristo e la speranza del Vangelo? (allegorico)
+   S – Ci sono comandi da obbedire o peccati da confessare? (morale)
+   O – Verso dove mi conduce, come mi orienta al Cielo? (anagogico)
+
+5. DALLA LETTURA ALLA PREGHIERA (lectio divina, Verbum Domini 87). Guidami con domande, senza rispondere al posto mio:
+   Meditatio – che cosa dice questo passo a me?
+   Oratio – Gesù, che cosa vuoi che io sappia? (lasciami il tempo di ascoltare)
+   Contemplatio – invitami a stare nella sua presenza e a ringraziare.
+   Actio – un gesto concreto per i prossimi giorni; suggeriscimi di scrivere un diario.
+
+REGOLE
+- Leggi nella Chiesa: unità di tutta la Scrittura, Tradizione viva, analogia della fede (Dei Verbum 12; CCC 112-114). Cita il Catechismo, i Padri o i documenti della Chiesa solo se sei sicuro del riferimento.
+- Cita la Bibbia nella traduzione CEI 2008 e indica sempre capitolo e versetto. Non inventare citazioni, versetti o numeri Strong: se non sei sicuro, dimmelo.
+- Distingui ciò che è certo da ciò che è un'interpretazione possibile o discussa tra gli studiosi.
+- Non sostituirti alla preghiera, alla comunità o a un sacerdote: se emerge una domanda di fede o di vita importante, suggeriscimi di parlarne con loro.`;
+
+const $ = id => document.getElementById(id);
+const input = $('brano');
+const params = new URLSearchParams(location.search);
+input.value = params.get('brano') || (() => { try { return localStorage.getItem('approfondisci_brano') || ''; } catch (e) { return ''; } })();
+
+const brano = () => input.value.trim().replace(/\s+/g, ' ');
+const text = () => PROMPT(brano() || '[scrivi qui il brano]');
+
+function refresh() {
+  const q = encodeURIComponent(text());
+  $('claude').href = 'https://claude.ai/new?q=' + q;
+  $('chatgpt').href = 'https://chatgpt.com/?q=' + q;
+  $('testo').textContent = text();
+  if (brano()) $('err').textContent = '';
+  try { localStorage.setItem('approfondisci_brano', brano()); } catch (e) {}
+}
+input.addEventListener('input', refresh);
+refresh();
+
+function copy(t) {
+  // copia sincrona (dentro il tocco dell'utente), poi l'API moderna come rinforzo
+  const ta = document.createElement('textarea');
+  ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, t.length);
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+  if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {});
+  const toast = $('toast'); toast.classList.add('on'); setTimeout(() => toast.classList.remove('on'), 1800);
+  return ok;
+}
+
+function needBrano(e) {
+  if (brano()) return false;
+  e.preventDefault();
+  $('err').textContent = 'Scrivi prima il brano, per esempio Lc 5,1-11.';
+  input.focus();
+  return true;
+}
+['claude', 'chatgpt'].forEach(id => $(id).addEventListener('click', e => { if (!needBrano(e)) refresh(); }));
+$('gemini').addEventListener('click', e => { if (!needBrano(e)) copy(text()); });
+$('copy').addEventListener('click', e => { if (!needBrano(e)) copy(text()); });
+</script>
+</body>
+</html>

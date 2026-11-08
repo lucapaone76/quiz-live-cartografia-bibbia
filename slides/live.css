@@ -111,3 +111,8 @@ button.main:active, a.main:active { transform:scale(.97); }
 .deck.reflow .layout-quiz h2 { font-size:20px; }
 .deck.reflow .layout-quiz .side p { font-size:17px; }
 .deck.reflow .layout-quiz .side p:last-child { font-size:13px; }
+
+/* ---- parte 2, slide 11 (il prompt) e 12 (approfondisci): sul telefono una colonna sola ---- */
+.deck.reflow .layout-prompt pre { column-count:1; padding:12px 14px; }
+.deck.reflow .layout-prompt pre code { font-size:15px; line-height:1.4; }
+.deck.reflow .layout-quiz .side ul { font-size:16px; }

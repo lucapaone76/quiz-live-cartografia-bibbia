@@ -234,3 +234,76 @@ Inquadra il codice con il telefono, scrivi il tuo nome e rispondi. Alla fine i p
 *(lasciare proiettata mentre le persone entrano nel quiz)*
 - Sui telefoni compare il pulsante «Entra nel quiz 2»: il nome è già quello del quiz 1 e delle slide.
 - Apri il pannello del quiz (pulsante qui sotto, stesso PIN). Sono 7 domande, circa 8-10 minuti, con una classifica separata.
+
+
+---
+
+## Slide 11 — Approfondire da soli: il prompt per l'intelligenza artificiale
+
+### Testo della slide
+
+<!-- layout: prompt -->
+
+Copialo in **Claude**, **ChatGPT** o **Gemini** e scrivi il brano al posto di [BRANO], oppure usa la slide successiva.
+
+    Accompagnami ad approfondire [BRANO] seguendo un metodo cattolico di lettura della Bibbia. Rispondi in italiano, con risposte brevi, un passo alla volta: alla fine di ogni passo fermati e aspetta la mia risposta.
+
+    1. INIZIO. Invitami a un minuto di silenzio e a una breve preghiera allo Spirito Santo, Autore principale della Scrittura. Poi dammi il link al brano sulla Bibbia CEI 2008 (www.bibbiaedu.it) e chiedimi di leggerlo due volte. Non riassumerlo e non commentarlo ancora.
+
+    2. LA FRASE CHE MI COLPISCE. Chiedimi quale frase mi ha colpito di più alla seconda lettura. Tutto il resto parte da lì.
+
+    3. TRE VIE. Proponimi tre vie per approfondire quella frase e lasciami scegliere (non serve farle tutte):
+       a) Il contesto: che cosa c'è subito prima e subito dopo; il contesto storico, geografico, sociale e biblico (scene dell'Antico Testamento che il brano richiama).
+       b) I passi paralleli: altri passi della Bibbia che rafforzano o chiariscono questo ed evitano i fraintendimenti.
+       c) Le parole: traduzione letterale, parole greche o ebraiche importanti con il numero Strong e il link a Blue Letter Bible (utile per la lingua, non per l'interpretazione, perché è di area protestante).
+
+    4. SE MI BLOCCO, usa la bussola dei quattro sensi:
+       N – Che cosa mi rivela su Dio e sul suo carattere? (senso letterale)
+       E – Come si manifesta qui Cristo e la speranza del Vangelo? (allegorico)
+       S – Ci sono comandi da obbedire o peccati da confessare? (morale)
+       O – Verso dove mi conduce, come mi orienta al Cielo? (anagogico)
+
+    5. DALLA LETTURA ALLA PREGHIERA (lectio divina, Verbum Domini 87). Guidami con domande, senza rispondere al posto mio:
+       Meditatio – che cosa dice questo passo a me?
+       Oratio – Gesù, che cosa vuoi che io sappia? (lasciami il tempo di ascoltare)
+       Contemplatio – invitami a stare nella sua presenza e a ringraziare.
+       Actio – un gesto concreto per i prossimi giorni; suggeriscimi di scrivere un diario.
+
+    REGOLE
+    - Leggi nella Chiesa: unità di tutta la Scrittura, Tradizione viva, analogia della fede (Dei Verbum 12; CCC 112-114). Cita il Catechismo, i Padri o i documenti della Chiesa solo se sei sicuro del riferimento.
+    - Cita la Bibbia nella traduzione CEI 2008 e indica sempre capitolo e versetto. Non inventare citazioni, versetti o numeri Strong: se non sei sicuro, dimmelo.
+    - Distingui ciò che è certo da ciò che è un'interpretazione possibile o discussa tra gli studiosi.
+    - Non sostituirti alla preghiera, alla comunità o a un sacerdote: se emerge una domanda di fede o di vita importante, suggeriscimi di parlarne con loro.
+
+### Note per chi parla
+
+*(2 minuti, dopo il quiz)*
+- È il metodo di stasera messo in forma di istruzioni per l'intelligenza artificiale: la frase che colpisce (slide 2), le tre vie (slide 3-7), la lectio (slide 8) e la bussola della prima parte (slide 10).
+- Il testo è piccolo per il proiettore: è pensato per il PDF e per il telefono. Sullo schermo basta mostrarlo e passare alla slide successiva.
+- Ricorda tre cose: l'IA va guidata un passo alla volta; può sbagliare un versetto o una citazione, quindi si controlla sempre su [BibbiaEdu](https://www.bibbiaedu.it/); non sostituisce la preghiera, la comunità e il confronto con un sacerdote.
+
+---
+
+## Slide 12 — Approfondire da soli: i link
+
+### Testo della slide
+
+<!-- layout: quiz -->
+
+![QR code della pagina per approfondire un brano](assets/qr-approfondisci.svg)
+
+# Approfondisci da solo
+## Con Claude, ChatGPT o Gemini
+
+Inquadra il codice, scrivi il brano (per esempio Lc 5,1-11) e scegli l'app:
+- con **[Claude](https://claude.ai/)** e **[ChatGPT](https://chatgpt.com/)** il testo è già scritto: premi invio
+- con **[Gemini](https://gemini.google.com/)** il testo viene copiato: incollalo e premi invio
+
+[https://lucapaone76.github.io/quiz-live-cartografia-bibbia/approfondisci.html](https://lucapaone76.github.io/quiz-live-cartografia-bibbia/approfondisci.html)
+
+### Note per chi parla
+
+*(lasciare proiettata alla fine, mentre le persone salutano)*
+- La pagina è aperta a tutti: non serve scrivere il nome né entrare nel quiz. Serve solo l'app scelta, con l'account se l'app lo chiede.
+- Claude: provato, il testo arriva già scritto e si preme invio. ChatGPT usa lo stesso tipo di link. Gemini non accetta il testo nel link: la pagina lo copia e la persona lo incolla.
+- Il telefono ricorda l'ultimo brano scritto. Si può anche mandare un link con il brano già inserito, per esempio `approfondisci.html?brano=Gv 4,1-30`.

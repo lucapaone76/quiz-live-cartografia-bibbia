@@ -12,6 +12,7 @@ sono ignorate, quindi va bene anche il file completo del Project) e scrive:
     slides/deck-1-note.json, deck-2-note.json  le note per chi parla (le carica solo la regia)
     slides/deck.css                            slides.css adattato: vale solo dentro le slide
     slides/src/assets/qr-quiz-1.svg, -2.svg    QR code dei quiz
+    slides/src/assets/qr-approfondisci.svg     QR code di approfondisci.html (parte 2, slide 12)
 
 Passi di animazione: in alcune impaginazioni gli elementi compaiono uno alla volta
 (schede, livelli dell'iceberg, gradini, domande della bussola, righe delle tabelle).
@@ -269,9 +270,11 @@ def make_qr():
     except ImportError:
         print("[avviso] pip install qrcode per rigenerare i QR code", file=sys.stderr)
         return
-    for n in (1, 2):
+    targets = {f"qr-quiz-{n}": (f"{SITE}vote.html?quiz={n}", f"QR code del quiz {n}") for n in (1, 2)}
+    targets["qr-approfondisci"] = (f"{SITE}approfondisci.html", "QR code della pagina per approfondire un brano")
+    for name, (url, label) in targets.items():
         q = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, border=2)
-        q.add_data(f"{SITE}vote.html?quiz={n}")
+        q.add_data(url)
         q.make(fit=True)
         m = q.get_matrix()
         size, d = len(m), []
@@ -285,9 +288,9 @@ def make_qr():
                     d.append(f"M{s} {y}h{x - s}v1h-{x - s}z")
                 else:
                     x += 1
-        (SRC / f"assets/qr-quiz-{n}.svg").write_text(
+        (SRC / f"assets/{name}.svg").write_text(
             f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {size} {size}" shape-rendering="crispEdges" role="img" '
-            f'aria-label="QR code del quiz {n}"><rect width="{size}" height="{size}" fill="#ffffff"/>'
+            f'aria-label="{label}"><rect width="{size}" height="{size}" fill="#ffffff"/>'
             f'<path fill="#14284b" d="{"".join(d)}"/></svg>', encoding="utf-8")
 
 
@@ -306,7 +309,7 @@ def main():
                 quiz = None
                 if s["opts"].get("layout") == "quiz":
                     m = re.search(r"qr-quiz-(\d)", chunk)
-                    quiz = int(m.group(1)) if m else deck
+                    quiz = int(m.group(1)) if m else None   # layout quiz senza QR del quiz (es. pagina approfondisci)
                 pages.append({"n": s["n"], "title": s["title"] + label, "steps": steps, "quiz": quiz, "html": html})
                 notes.append(note_html if i == 0 else f"<p><em>(continua la slide {s['n']})</em></p>" + note_html)
         (HERE / f"deck-{deck}.json").write_text(json.dumps({"deck": deck, "title": title, "pages": pages}, ensure_ascii=False), encoding="utf-8")

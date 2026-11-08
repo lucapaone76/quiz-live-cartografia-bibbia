@@ -277,3 +277,15 @@ th,td{vertical-align:top;text-align:left}
 .layout-quiz .side p{font-size:25px;line-height:1.35;margin:0}
 .layout-quiz .side p:last-child{font-size:20px;word-break:break-all;background:rgba(255,250,240,.9);border:1.5px solid var(--gold);padding:12px 16px}
 .layout-quiz .side p:last-child a{color:var(--navy-2);border-bottom-width:2px}
+.layout-quiz .side ul{font-size:23px;line-height:1.35;margin:0}
+.layout-quiz .side li{margin-bottom:.25em}
+
+/* ==========================================================================
+   LAYOUT: prompt  (parte 2, slide 11) — il testo da copiare in un'app di intelligenza artificiale
+   Nel markdown il prompt è un blocco di codice (righe rientrate di 4 spazi); qui va su due colonne.
+   ========================================================================== */
+.layout-prompt .slide-title{margin-bottom:16px}
+.layout-prompt .body>p{text-align:center;font-size:1em;margin:0 0 14px}
+.layout-prompt pre{margin:0;padding:16px 22px;background:rgba(255,250,240,.94);border:1.5px solid var(--navy);border-top:6px solid var(--gold);
+  box-shadow:5px 5px 0 rgba(20,40,75,.13);column-count:2;column-gap:34px;column-rule:1px solid var(--gold-soft)}
+.layout-prompt pre code{display:block;font-family:var(--sans);font-size:var(--code,14.6px);line-height:1.34;white-space:pre-wrap;color:var(--ink)}

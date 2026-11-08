@@ -13,6 +13,17 @@ Due quiz dal vivo e le slide delle due parti della catechesi su come leggere la 
 | Risposte di tutti, quiz 1 / 2 | chi presenta (serve il PIN) | `admin.html?quiz=1`, `admin.html?quiz=2` |
 | Numeri dei partecipanti | chi presenta (serve il PIN) | `numeri.html` |
 | Pagina iniziale (slide e quiz) | tutti | `index.html` |
+| Approfondisci un brano da solo, con Claude, ChatGPT o Gemini | tutti, senza nome | `approfondisci.html` (anche `approfondisci.html?brano=Lc 5,1-11`) |
+
+## Approfondisci un brano (`approfondisci.html`)
+
+Pagina aperta a tutti, senza nome e senza Supabase. Si scrive il brano e si sceglie l'app:
+
+- **Claude** (`claude.ai/new?q=…`) e **ChatGPT** (`chatgpt.com/?q=…`): il prompt arriva già scritto nella casella, si preme invio. Claude è stato provato da telefono; ChatGPT non ancora.
+- **Gemini**: non accetta il testo nel link. La pagina copia il prompt negli appunti e apre Gemini; la persona lo incolla.
+- «Copia solo il testo» serve per qualsiasi altra app. Il telefono ricorda l'ultimo brano scritto.
+
+Il prompt è nella pagina stessa (funzione `PROMPT`) ed è lo stesso della slide 11 della parte 2: se cambi l'uno, cambia anche l'altro. Il QR code della slide 12 (`slides/src/assets/qr-approfondisci.svg`) lo genera `make_slides.py`.
 
 ## Come funziona
 
