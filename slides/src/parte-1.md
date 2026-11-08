@@ -260,7 +260,7 @@ Invoca lo Spirito Santo, **Autore principale** della Scrittura, che ha ispirato 
 
 - **N — Che cosa mi rivela questo testo su Dio e sul suo carattere?** *(senso letterale)*
 - **E — Come si manifesta qui Cristo e la speranza del Vangelo?** *(senso allegorico)*
-- **S — Ci sono comandi da obbedire o peccati da confessare?** *(senso morale)*
+- **S — Come mi chiama a cambiare mente e vita, lasciando l'uomo vecchio per seguire e obbedire alla Parola?** *(senso morale)*
 - **O — Verso dove mi conduce? Come mi orienta al Cielo?** *(senso anagogico)*
 
 > **Leggi *nella* Chiesa**: con attenzione all'unità di tutta la Scrittura, alla Tradizione viva e all'analogia della fede. *(Dei Verbum 12; CCC 112-114)*

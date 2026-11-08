@@ -260,7 +260,7 @@ Copialo in **Claude**, **ChatGPT** o **Gemini** e scrivi il brano al posto di [B
     4. SE MI BLOCCO, usa la bussola dei quattro sensi:
        N – Che cosa mi rivela su Dio e sul suo carattere? (senso letterale)
        E – Come si manifesta qui Cristo e la speranza del Vangelo? (allegorico)
-       S – Ci sono comandi da obbedire o peccati da confessare? (morale)
+       S – Come mi chiama a cambiare mente e vita, lasciando l'uomo vecchio per seguire e obbedire alla Parola? (morale)
        O – Verso dove mi conduce, come mi orienta al Cielo? (anagogico)
 
     5. DALLA LETTURA ALLA PREGHIERA (lectio divina, Verbum Domini 87). Guidami con domande, senza rispondere al posto mio:
