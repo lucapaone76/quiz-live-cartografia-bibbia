@@ -14,7 +14,7 @@ Due quiz dal vivo e le slide delle due parti della catechesi su come leggere la 
 | Numeri dei partecipanti | chi presenta (serve il PIN) | `numeri.html` |
 | Pagina iniziale (slide e quiz) | tutti | `index.html` |
 | Approfondisci un brano da solo, con Claude, ChatGPT o Gemini | tutti, senza nome | `approfondisci.html` (anche `approfondisci.html?brano=Lc 5,1-11`) |
-| Il metodo completo in italiano controllato (lo legge l'IA tramite il prompt) | tutti | `metodo-lettura-bibbia.md` |
+| Il metodo completo in italiano controllato (lo legge l'IA tramite il prompt) | tutti | `metodo-lettura-bibbia.html` (sorgente: `metodo-lettura-bibbia.md`) |
 
 ## Approfondisci un brano (`approfondisci.html`)
 
@@ -24,7 +24,7 @@ Pagina aperta a tutti, senza nome e senza Supabase. Si scrive il brano e si sceg
 - **Gemini**: non accetta il testo nel link. La pagina copia il prompt negli appunti e apre Gemini; la persona lo incolla.
 - «Copia solo il testo» serve per qualsiasi altra app. Il telefono ricorda l'ultimo brano scritto.
 
-Il prompt è nella pagina stessa (funzione `PROMPT`) ed è lo stesso della slide 11 della parte 2 (`slides/src/parte-2.md`): se cambi l'uno, cambia anche l'altro. Il prompt chiede all'app di leggere prima `metodo-lettura-bibbia.md`: la catechesi unificata in italiano controllato (regole ispirate ad ASD-STE100), servita come testo semplice da GitHub Pages. Vale anche per Gemini, perché il link è nel testo copiato; se l'app non riesce ad aprirlo, usa le istruzioni del prompt. Se cambi il metodo (per esempio una domanda della bussola), aggiorna anche questo file. Il QR code della slide 12 (`slides/src/assets/qr-approfondisci.svg`) lo genera `make_slides.py`.
+Il prompt è nella pagina stessa (funzione `PROMPT`) ed è lo stesso della slide 11 della parte 2 (`slides/src/parte-2.md`): se cambi l'uno, cambia anche l'altro. Il prompt chiede all'app di leggere prima `metodo-lettura-bibbia.html`: la catechesi unificata in italiano controllato (regole ispirate ad ASD-STE100). La sorgente è `metodo-lettura-bibbia.md`; la pagina HTML si rigenera con `python3 make_metodo.py`. Il link punta all'HTML perché ChatGPT non legge le pagine servite come Markdown (`text/markdown`). Vale anche per Gemini, perché il link è nel testo copiato; se l'app non riesce ad aprirlo, usa le istruzioni del prompt. Se cambi il metodo (per esempio una domanda della bussola), aggiorna `metodo-lettura-bibbia.md` e rilancia `make_metodo.py`. Il QR code della slide 12 (`slides/src/assets/qr-approfondisci.svg`) lo genera `make_slides.py`.
 
 ## Come funziona
 

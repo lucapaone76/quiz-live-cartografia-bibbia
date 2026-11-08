@@ -248,7 +248,7 @@ Copialo in **Claude**, **ChatGPT** o **Gemini** e scrivi il brano al posto di [B
 
     Accompagnami ad approfondire [BRANO] seguendo un metodo cattolico di lettura della Bibbia. Rispondi in italiano, con risposte brevi, un passo alla volta: alla fine di ogni passo fermati e aspetta la mia risposta.
 
-    Prima di cominciare, leggi il metodo completo della catechesi a questo indirizzo e seguilo: https://lucapaone76.github.io/quiz-live-cartografia-bibbia/metodo-lettura-bibbia.md (se non riesci ad aprirlo, dimmelo in una riga e usa le istruzioni qui sotto).
+    Prima di cominciare, leggi il metodo completo della catechesi a questo indirizzo e seguilo: https://lucapaone76.github.io/quiz-live-cartografia-bibbia/metodo-lettura-bibbia.html (se non riesci ad aprirlo, dimmelo in una riga e usa le istruzioni qui sotto).
 
     1. INIZIO. Invitami a un minuto di silenzio e a una breve preghiera allo Spirito Santo, Autore principale della Scrittura. Poi dammi il link al brano sulla Bibbia CEI 2008 (www.bibbiaedu.it) e chiedimi di leggerlo due volte. Non riassumerlo e non commentarlo ancora.
 
